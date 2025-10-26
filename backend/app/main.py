@@ -20,6 +20,15 @@ if codespace_name:
         f"https://{codespace_name}-8000.app.github.dev",
     ])
 
+# Читаем дополнительные домены для прод-окружения из переменной окружения
+# Пример: ALLOWED_ORIGINS="https://your-project.web.app,https://your-project.firebaseapp.com,https://your-domain.com"
+extra_origins = os.getenv("ALLOWED_ORIGINS")
+if extra_origins:
+    for item in extra_origins.split(","):
+        host = item.strip()
+        if host:
+            origins.append(host)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
