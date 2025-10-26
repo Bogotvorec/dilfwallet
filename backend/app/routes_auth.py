@@ -39,11 +39,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     token = create_access_token(user.id)
     return JSONResponse({"access_token": token, "token_type": "bearer"})
 
-
-
-
-    from app.dependencies import get_current_user 
-
 @router.get("/me", response_model=UserRead)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user

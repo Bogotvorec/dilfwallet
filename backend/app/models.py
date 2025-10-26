@@ -31,13 +31,16 @@ class PortfolioEntry(Base):
     purchase_price = Column(Float)
 
     owner = relationship("User", back_populates="portfolio")
+    transactions = relationship("Transaction", back_populates="portfolio_entry")
 
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    portfolio_id = Column(UUID(as_uuid=True), ForeignKey("portfolio.id"))  # fixed name
+    portfolio_entry_id = Column(Integer, ForeignKey("portfolio.id"))
     coin = Column(String)
     quantity = Column(Numeric)
     price = Column(Numeric)
     type = Column(Enum(TransactionType))
     date = Column(DateTime, default=datetime.utcnow)
+    
+    portfolio_entry = relationship("PortfolioEntry", back_populates="transactions")
