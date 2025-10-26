@@ -1,36 +1,36 @@
-import { useState, useEffect } from 'react';import { useState, useEffect } from 'react';import { useState } from "react";
+import { useEffect, useState } from 'react';import { useEffect, useState } from 'react';import { useState, useEffect } from 'react';import { useState, useEffect } from 'react';import { useState } from "react";
 
 import Layout from '@/components/Layout';
 
-import { useAuth } from '@/lib/auth';import Layout from '@/components/Layout';import axios from "axios";
+import { useAuth } from '@/lib/auth';import Layout from '@/components/Layout';
 
 import { apiClient } from '@/lib/api';
 
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';import Layout from '@/components/Layout';
 
 interface PortfolioItem {
 
-  id: number;import { apiClient } from '@/lib/api';export default function PortfolioPage() {
+  id: number;import { apiClient } from '@/lib/api';
 
   symbol: string;
 
-  amount: number;import { useRouter } from 'next/router';  const [symbol, setSymbol] = useState("");
+  amount: number;import { useAuth } from '@/lib/auth';import Layout from '@/components/Layout';import axios from "axios";
 
   purchase_price: number;
 
-  current_price?: number;  const [amount, setAmount] = useState("");
+  current_price?: number;interface PortfolioItem {
 
   value?: number;
 
-  profit_loss?: number;interface PortfolioItem {  const [price, setPrice] = useState("");
+  profit_loss?: number;  id: number;import { apiClient } from '@/lib/api';
 
   profit_loss_percent?: number;
 
-}  symbol: string;  const [message, setMessage] = useState("");
+}  symbol: string;
 
 
 
-interface PortfolioSummary {  amount: number;  const [token, setToken] = useState("");
+interface PortfolioSummary {  amount: number;import { useAuth } from '@/lib/auth';
 
   total_value: number;
 
@@ -38,177 +38,601 @@ interface PortfolioSummary {  amount: number;  const [token, setToken] = useStat
 
   total_profit_loss: number;
 
-  total_profit_loss_percent: number;  current_price?: number;  const handleAdd = async () => {
+  total_profit_loss_percent: number;  current_price?: number;interface PortfolioItem {
 
   items: PortfolioItem[];
 
-}  total_value?: number;    try {
+}  value?: number;
 
 
 
-export default function PortfolioPage() {  profit_loss?: number;      const res = await axios.post(
+export default function PortfolioPage() {  profit_loss?: number;  id: number;import { apiClient } from '@/lib/api';export default function PortfolioPage() {
 
   const { user, loading: authLoading } = useAuth();
 
-  const [summary, setSummary] = useState<PortfolioSummary | null>(null);  profit_loss_percentage?: number;        "http://localhost:8000/portfolio", // или твой backend URL
+  profit_loss_percent?: number;
 
-  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<PortfolioSummary | null>(null);
 
-  const [error, setError] = useState('');}        {
+  const [loading, setLoading] = useState(true);}  symbol: string;
 
-  
-
-  // Form state          symbol,
-
-  const [showAddForm, setShowAddForm] = useState(false);
-
-  const [symbol, setSymbol] = useState('');interface PortfolioSummary {          amount: parseFloat(amount),
-
-  const [amount, setAmount] = useState('');
-
-  const [purchasePrice, setPurchasePrice] = useState('');  items: PortfolioItem[];          purchase_price: parseFloat(price),
-
-  const [submitting, setSubmitting] = useState(false);
-
-  total_invested: number;        },
-
-  useEffect(() => {
-
-    if (!authLoading && user) {  total_current_value: number;        {
-
-      loadPortfolio();
-
-    }  total_profit_loss: number;          headers: {
-
-  }, [user, authLoading]);
-
-  total_profit_loss_percentage: number;            Authorization: `Bearer ${eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkMDMwMDE0Zi05NmNhLTQ3ZDUtOGUxYS01MmJlOWUzZTU1ZjgiLCJleHAiOjE3NTM2OTYxNjR9.V-pPXqRuwE5Nwj-Xh0EDqlbavJCEhukyIYEQqjeGGWs}`,
-
-  const loadPortfolio = async () => {
-
-    try {}          },
-
-      setLoading(true);
-
-      const data = await apiClient.getPortfolioSummary();        }
-
-      setSummary(data);
-
-      setError('');export default function PortfolioPage() {      );
-
-    } catch (err: any) {
-
-      console.error('Failed to load portfolio:', err);  const { isAuthenticated, loading: authLoading } = useAuth();      setMessage("Добавлено успешно!");
-
-      setError(err.message || 'Не удалось загрузить портфолио');
-
-    } finally {  const router = useRouter();    } catch (err: any) {
-
-      setLoading(false);
-
-    }  const [summary, setSummary] = useState<PortfolioSummary | null>(null);      setMessage("Ошибка: " + err.response?.data?.detail || "Неизвестно");
-
-  };
-
-  const [loading, setLoading] = useState(true);    }
-
-  const handleAddAsset = async (e: React.FormEvent) => {
-
-    e.preventDefault();  const [error, setError] = useState('');  };
-
-    setSubmitting(true);
-
-    setError('');  const [showAddForm, setShowAddForm] = useState(false);
+  const [error, setError] = useState('');
 
 
 
-    try {  const [formData, setFormData] = useState({  return (
+  // Form state
 
-      await apiClient.addPortfolioEntry({
+  const [showAddForm, setShowAddForm] = useState(false);interface PortfolioSummary {  amount: number;import { useRouter } from 'next/router';  const [symbol, setSymbol] = useState("");
 
-        symbol: symbol.toUpperCase(),    symbol: '',    <div style={{ maxWidth: 400, margin: "40px auto" }}>
+  const [symbol, setSymbol] = useState('');
 
-        amount: parseFloat(amount),
+  const [amount, setAmount] = useState('');  total_value: number;
 
-        purchase_price: parseFloat(purchasePrice),    amount: '',      <h2>Добавить крипто-актив</h2>
+  const [purchasePrice, setPurchasePrice] = useState('');
 
-      });
+  const [submitting, setSubmitting] = useState(false);  total_invested: number;  purchase_price: number;
 
-    purchase_price: '',
 
-      // Reset form
 
-      setSymbol('');  });      <input
+  useEffect(() => {  total_profit_loss: number;
 
-      setAmount('');
+    if (!authLoading && user) {
 
-      setPurchasePrice('');        type="text"
-
-      setShowAddForm(false);
-
-  useEffect(() => {        placeholder="JWT Token"
-
-      // Reload portfolio
-
-      await loadPortfolio();    if (!authLoading && !isAuthenticated) {        value={token}
-
-    } catch (err: any) {
-
-      setError(err.response?.data?.detail || err.message || 'Ошибка при добавлении актива');      router.push('/login');        onChange={(e) => setToken(e.target.value)}
-
-    } finally {
-
-      setSubmitting(false);    }        style={{ width: "100%", marginBottom: 8 }}
+      loadPortfolio();  total_profit_loss_percent: number;  current_price?: number;  const [amount, setAmount] = useState("");
 
     }
 
-  };  }, [authLoading, isAuthenticated, router]);      />
+  }, [user, authLoading]);  items: PortfolioItem[];
 
 
 
-  const handleDelete = async (id: number) => {
-
-    if (!confirm('Вы уверены, что хотите удалить этот актив?')) {
-
-      return;  useEffect(() => {      <input
-
-    }
-
-    if (isAuthenticated) {        type="text"
+  const loadPortfolio = async () => {}  value?: number;
 
     try {
 
-      await apiClient.deletePortfolioEntry(id);      loadPortfolio();        placeholder="Symbol (например BTC)"
+      setLoading(true);
+
+      const data = await apiClient.getPortfolioSummary();
+
+      setSummary(data);export default function PortfolioPage() {  profit_loss?: number;interface PortfolioItem {  const [price, setPrice] = useState("");
+
+      setError('');
+
+    } catch (err: any) {  const { user, loading: authLoading } = useAuth();
+
+      console.error('Failed to load portfolio:', err);
+
+      setError(err.message || 'Не удалось загрузить портфолио');  profit_loss_percent?: number;
+
+    } finally {
+
+      setLoading(false);  const [summary, setSummary] = useState<PortfolioSummary | null>(null);
+
+    }
+
+  };  const [loading, setLoading] = useState(true);}  symbol: string;  const [message, setMessage] = useState("");
+
+
+
+  const handleAddAsset = async (e: React.FormEvent) => {  const [error, setError] = useState('');
+
+    e.preventDefault();
+
+    setSubmitting(true);
+
+    try {
+
+      await apiClient.addPortfolioEntry({  // Form state
+
+        symbol: symbol.trim().toUpperCase(),
+
+        amount: parseFloat(amount),  const [showAddForm, setShowAddForm] = useState(false);interface PortfolioSummary {  amount: number;  const [token, setToken] = useState("");
+
+        purchase_price: parseFloat(purchasePrice),
+
+      });  const [symbol, setSymbol] = useState('');
+
+      setSymbol('');
+
+      setAmount('');  const [amount, setAmount] = useState('');  total_value: number;
+
+      setPurchasePrice('');
+
+      setShowAddForm(false);  const [purchasePrice, setPurchasePrice] = useState('');
 
       await loadPortfolio();
 
-    } catch (err: any) {    }        value={symbol}
+    } catch (err: any) {  const [submitting, setSubmitting] = useState(false);  total_invested: number;  purchase_price: number;
 
-      setError(err.response?.data?.detail || err.message || 'Ошибка при удалении актива');
+      console.error('Failed to add asset:', err);
 
-    }  }, [isAuthenticated]);        onChange={(e) => setSymbol(e.target.value)}
+      setError(err.response?.data?.detail || err.message || 'Не удалось добавить актив');
 
-  };
+    } finally {
 
-        style={{ width: "100%", marginBottom: 8 }}
+      setSubmitting(false);  useEffect(() => {  total_profit_loss: number;
 
-  if (authLoading || loading) {
+    }
 
-    return (  const loadPortfolio = async () => {      />
+  };    if (!authLoading && user) {
 
-      <Layout>
 
-        <div className="flex justify-center items-center min-h-screen">    try {      <input
 
-          <div className="text-xl">Загрузка...</div>
+  return (      loadPortfolio();  total_profit_loss_percent: number;  current_price?: number;  const handleAdd = async () => {
 
-        </div>      setLoading(true);        type="number"
+    <Layout>
 
-      </Layout>
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">    }
 
-    );      const data = await apiClient.getPortfolioSummary();        placeholder="Amount"
+        <h1 className="text-2xl font-bold mb-4">Портфолио</h1>
 
-  }
+  }, [user, authLoading]);  items: PortfolioItem[];
+
+        {error && (
+
+          <div className="mb-4 p-3 rounded bg-red-50 text-red-700 border border-red-200">
+
+            {error}
+
+          </div>  const loadPortfolio = async () => {}  total_value?: number;    try {
+
+        )}
+
+    try {
+
+        {loading ? (
+
+          <div>Загрузка...</div>      setLoading(true);
+
+        ) : (
+
+          <>      const data = await apiClient.getPortfolioSummary();
+
+            {/* Summary cards */}
+
+            {summary && (      setSummary(data);export default function PortfolioPage() {  profit_loss?: number;      const res = await axios.post(
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+
+                <div className="p-4 rounded bg-white shadow">      setError('');
+
+                  <div className="text-sm text-gray-500">Инвестировано</div>
+
+                  <div className="text-xl font-semibold">${summary.total_invested.toFixed(2)}</div>    } catch (err: any) {  const { user, loading: authLoading } = useAuth();
+
+                </div>
+
+                <div className="p-4 rounded bg-white shadow">      console.error('Failed to load portfolio:', err);
+
+                  <div className="text-sm text-gray-500">Текущая стоимость</div>
+
+                  <div className="text-xl font-semibold">${summary.total_value.toFixed(2)}</div>      setError(err.message || 'Не удалось загрузить портфолио');  const [summary, setSummary] = useState<PortfolioSummary | null>(null);  profit_loss_percentage?: number;        "http://localhost:8000/portfolio", // или твой backend URL
+
+                </div>
+
+                <div className="p-4 rounded bg-white shadow">    } finally {
+
+                  <div className="text-sm text-gray-500">Прибыль/Убыток</div>
+
+                  <div className={`text-xl font-semibold ${summary.total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600'}`}>      setLoading(false);  const [loading, setLoading] = useState(true);
+
+                    ${summary.total_profit_loss.toFixed(2)}
+
+                  </div>    }
+
+                </div>
+
+                <div className="p-4 rounded bg-white shadow">  };  const [error, setError] = useState('');}        {
+
+                  <div className="text-sm text-gray-500">Доходность</div>
+
+                  <div className={`text-xl font-semibold ${summary.total_profit_loss_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+
+                    {summary.total_profit_loss_percent.toFixed(2)}%
+
+                  </div>  const handleAddAsset = async (e: React.FormEvent) => {  
+
+                </div>
+
+              </div>    e.preventDefault();
+
+            )}
+
+    setSubmitting(true);  // Form state          symbol,
+
+            {/* Add asset form toggle */}
+
+            <div className="mb-4">    try {
+
+              <button
+
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"      await apiClient.addPortfolioEntry({  const [showAddForm, setShowAddForm] = useState(false);
+
+                onClick={() => setShowAddForm((v) => !v)}
+
+              >        symbol: symbol.trim().toUpperCase(),
+
+                {showAddForm ? 'Скрыть форму' : 'Добавить актив'}
+
+              </button>        amount: parseFloat(amount),  const [symbol, setSymbol] = useState('');interface PortfolioSummary {          amount: parseFloat(amount),
+
+            </div>
+
+        purchase_price: parseFloat(purchasePrice),
+
+            {/* Add asset form */}
+
+            {showAddForm && (      });  const [amount, setAmount] = useState('');
+
+              <form onSubmit={handleAddAsset} className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded shadow">
+
+                <input      setSymbol('');
+
+                  className="border rounded px-3 py-2"
+
+                  placeholder="Символ (например, BTC)"      setAmount('');  const [purchasePrice, setPurchasePrice] = useState('');  items: PortfolioItem[];          purchase_price: parseFloat(price),
+
+                  value={symbol}
+
+                  onChange={(e) => setSymbol(e.target.value)}      setPurchasePrice('');
+
+                  required
+
+                />      setShowAddForm(false);  const [submitting, setSubmitting] = useState(false);
+
+                <input
+
+                  className="border rounded px-3 py-2"      await loadPortfolio();
+
+                  placeholder="Количество"
+
+                  type="number"    } catch (err: any) {  total_invested: number;        },
+
+                  step="any"
+
+                  value={amount}      console.error('Failed to add asset:', err);
+
+                  onChange={(e) => setAmount(e.target.value)}
+
+                  required      setError(err.response?.data?.detail || err.message || 'Не удалось добавить актив');  useEffect(() => {
+
+                />
+
+                <input    } finally {
+
+                  className="border rounded px-3 py-2"
+
+                  placeholder="Цена покупки"      setSubmitting(false);    if (!authLoading && user) {  total_current_value: number;        {
+
+                  type="number"
+
+                  step="any"    }
+
+                  value={purchasePrice}
+
+                  onChange={(e) => setPurchasePrice(e.target.value)}  };      loadPortfolio();
+
+                  required
+
+                />
+
+                <button
+
+                  type="submit"  return (    }  total_profit_loss: number;          headers: {
+
+                  disabled={submitting}
+
+                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400"    <Layout>
+
+                >
+
+                  {submitting ? 'Добавление...' : 'Добавить'}      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">  }, [user, authLoading]);
+
+                </button>
+
+              </form>        <h1 className="text-2xl font-bold mb-4">Портфолио</h1>
+
+            )}
+
+  total_profit_loss_percentage: number;            Authorization: `Bearer ${eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkMDMwMDE0Zi05NmNhLTQ3ZDUtOGUxYS01MmJlOWUzZTU1ZjgiLCJleHAiOjE3NTM2OTYxNjR9.V-pPXqRuwE5Nwj-Xh0EDqlbavJCEhukyIYEQqjeGGWs}`,
+
+            {/* Items table */}
+
+            <div className="bg-white rounded shadow overflow-x-auto">        {error && (
+
+              <table className="min-w-full divide-y divide-gray-200">
+
+                <thead className="bg-gray-50">          <div className="mb-4 p-3 rounded bg-red-50 text-red-700 border border-red-200">  const loadPortfolio = async () => {
+
+                  <tr>
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Тикер</th>            {error}
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Количество</th>
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Цена покупки</th>          </div>    try {}          },
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Текущая цена</th>
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Стоимость</th>        )}
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L</th>
+
+                    <th className="px-4 py-2" />      setLoading(true);
+
+                  </tr>
+
+                </thead>        {loading ? (
+
+                <tbody className="bg-white divide-y divide-gray-200">
+
+                  {summary?.items?.map((item) => {          <div>Загрузка...</div>      const data = await apiClient.getPortfolioSummary();        }
+
+                    const plClass = (item.profit_loss || 0) >= 0 ? 'text-green-600' : 'text-red-600';
+
+                    return (        ) : (
+
+                      <tr key={item.id}>
+
+                        <td className="px-4 py-2 font-medium">{item.symbol}</td>          <>      setSummary(data);
+
+                        <td className="px-4 py-2">{item.amount}</td>
+
+                        <td className="px-4 py-2">${item.purchase_price.toFixed(2)}</td>            {/* Summary cards */}
+
+                        <td className="px-4 py-2">{item.current_price ? `$${item.current_price.toFixed(2)}` : '-'}</td>
+
+                        <td className="px-4 py-2">{item.value ? `$${item.value.toFixed(2)}` : '-'}</td>            {summary && (      setError('');export default function PortfolioPage() {      );
+
+                        <td className={`px-4 py-2 ${plClass}`}>
+
+                          {item.profit_loss !== undefined ? `$${item.profit_loss.toFixed(2)}` : '-'}              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+
+                          {item.profit_loss_percent !== undefined ? ` (${item.profit_loss_percent.toFixed(2)}%)` : ''}
+
+                        </td>                <div className="p-4 rounded bg-white shadow">    } catch (err: any) {
+
+                        <td className="px-4 py-2 text-right">
+
+                          {/* Кнопки действий при необходимости */}                  <div className="text-sm text-gray-500">Инвестировано</div>
+
+                        </td>
+
+                      </tr>                  <div className="text-xl font-semibold">${summary.total_invested.toFixed(2)}</div>      console.error('Failed to load portfolio:', err);  const { isAuthenticated, loading: authLoading } = useAuth();      setMessage("Добавлено успешно!");
+
+                    );
+
+                  })}                </div>
+
+                </tbody>
+
+              </table>                <div className="p-4 rounded bg-white shadow">      setError(err.message || 'Не удалось загрузить портфолио');
+
+            </div>
+
+          </>                  <div className="text-sm text-gray-500">Текущая стоимость</div>
+
+        )}
+
+      </div>                  <div className="text-xl font-semibold">${summary.total_value.toFixed(2)}</div>    } finally {  const router = useRouter();    } catch (err: any) {
+
+    </Layout>
+
+  );                </div>
+
+}
+
+                <div className="p-4 rounded bg-white shadow">      setLoading(false);
+
+                  <div className="text-sm text-gray-500">Прибыль/Убыток</div>
+
+                  <div className={`text-xl font-semibold ${summary.total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600'}`}>    }  const [summary, setSummary] = useState<PortfolioSummary | null>(null);      setMessage("Ошибка: " + err.response?.data?.detail || "Неизвестно");
+
+                    ${summary.total_profit_loss.toFixed(2)}
+
+                  </div>  };
+
+                </div>
+
+                <div className="p-4 rounded bg-white shadow">  const [loading, setLoading] = useState(true);    }
+
+                  <div className="text-sm text-gray-500">Доходность</div>
+
+                  <div className={`text-xl font-semibold ${summary.total_profit_loss_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>  const handleAddAsset = async (e: React.FormEvent) => {
+
+                    {summary.total_profit_loss_percent.toFixed(2)}%
+
+                  </div>    e.preventDefault();  const [error, setError] = useState('');  };
+
+                </div>
+
+              </div>    setSubmitting(true);
+
+            )}
+
+    setError('');  const [showAddForm, setShowAddForm] = useState(false);
+
+            {/* Add asset form toggle */}
+
+            <div className="mb-4">
+
+              <button
+
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"    try {  const [formData, setFormData] = useState({  return (
+
+                onClick={() => setShowAddForm((v) => !v)}
+
+              >      await apiClient.addPortfolioEntry({
+
+                {showAddForm ? 'Скрыть форму' : 'Добавить актив'}
+
+              </button>        symbol: symbol.toUpperCase(),    symbol: '',    <div style={{ maxWidth: 400, margin: "40px auto" }}>
+
+            </div>
+
+        amount: parseFloat(amount),
+
+            {/* Add asset form */}
+
+            {showAddForm && (        purchase_price: parseFloat(purchasePrice),    amount: '',      <h2>Добавить крипто-актив</h2>
+
+              <form onSubmit={handleAddAsset} className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded shadow">
+
+                <input      });
+
+                  className="border rounded px-3 py-2"
+
+                  placeholder="Символ (например, BTC)"    purchase_price: '',
+
+                  value={symbol}
+
+                  onChange={(e) => setSymbol(e.target.value)}      // Reset form
+
+                  required
+
+                />      setSymbol('');  });      <input
+
+                <input
+
+                  className="border rounded px-3 py-2"      setAmount('');
+
+                  placeholder="Количество"
+
+                  type="number"      setPurchasePrice('');        type="text"
+
+                  step="any"
+
+                  value={amount}      setShowAddForm(false);
+
+                  onChange={(e) => setAmount(e.target.value)}
+
+                  required  useEffect(() => {        placeholder="JWT Token"
+
+                />
+
+                <input      // Reload portfolio
+
+                  className="border rounded px-3 py-2"
+
+                  placeholder="Цена покупки"      await loadPortfolio();    if (!authLoading && !isAuthenticated) {        value={token}
+
+                  type="number"
+
+                  step="any"    } catch (err: any) {
+
+                  value={purchasePrice}
+
+                  onChange={(e) => setPurchasePrice(e.target.value)}      setError(err.response?.data?.detail || err.message || 'Ошибка при добавлении актива');      router.push('/login');        onChange={(e) => setToken(e.target.value)}
+
+                  required
+
+                />    } finally {
+
+                <button
+
+                  type="submit"      setSubmitting(false);    }        style={{ width: "100%", marginBottom: 8 }}
+
+                  disabled={submitting}
+
+                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400"    }
+
+                >
+
+                  {submitting ? 'Добавление...' : 'Добавить'}  };  }, [authLoading, isAuthenticated, router]);      />
+
+                </button>
+
+              </form>
+
+            )}
+
+  const handleDelete = async (id: number) => {
+
+            {/* Items table */}
+
+            <div className="bg-white rounded shadow overflow-x-auto">    if (!confirm('Вы уверены, что хотите удалить этот актив?')) {
+
+              <table className="min-w-full divide-y divide-gray-200">
+
+                <thead className="bg-gray-50">      return;  useEffect(() => {      <input
+
+                  <tr>
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Тикер</th>    }
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Количество</th>
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Цена покупки</th>    if (isAuthenticated) {        type="text"
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Текущая цена</th>
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Стоимость</th>    try {
+
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L</th>
+
+                    <th className="px-4 py-2" />      await apiClient.deletePortfolioEntry(id);      loadPortfolio();        placeholder="Symbol (например BTC)"
+
+                  </tr>
+
+                </thead>      await loadPortfolio();
+
+                <tbody className="bg-white divide-y divide-gray-200">
+
+                  {summary?.items?.map((item) => {    } catch (err: any) {    }        value={symbol}
+
+                    const plClass = (item.profit_loss || 0) >= 0 ? 'text-green-600' : 'text-red-600';
+
+                    return (      setError(err.response?.data?.detail || err.message || 'Ошибка при удалении актива');
+
+                      <tr key={item.id}>
+
+                        <td className="px-4 py-2 font-medium">{item.symbol}</td>    }  }, [isAuthenticated]);        onChange={(e) => setSymbol(e.target.value)}
+
+                        <td className="px-4 py-2">{item.amount}</td>
+
+                        <td className="px-4 py-2">${item.purchase_price.toFixed(2)}</td>  };
+
+                        <td className="px-4 py-2">{item.current_price ? `$${item.current_price.toFixed(2)}` : '-'}</td>
+
+                        <td className="px-4 py-2">{item.value ? `$${item.value.toFixed(2)}` : '-'}</td>        style={{ width: "100%", marginBottom: 8 }}
+
+                        <td className={`px-4 py-2 ${plClass}`}>
+
+                          {item.profit_loss !== undefined ? `$${item.profit_loss.toFixed(2)}` : '-'}  if (authLoading || loading) {
+
+                          {item.profit_loss_percent !== undefined ? ` (${item.profit_loss_percent.toFixed(2)}%)` : ''}
+
+                        </td>    return (  const loadPortfolio = async () => {      />
+
+                        <td className="px-4 py-2 text-right">
+
+                          {/* Кнопки действий при необходимости */}      <Layout>
+
+                        </td>
+
+                      </tr>        <div className="flex justify-center items-center min-h-screen">    try {      <input
+
+                    );
+
+                  })}          <div className="text-xl">Загрузка...</div>
+
+                </tbody>
+
+              </table>        </div>      setLoading(true);        type="number"
+
+            </div>
+
+          </>      </Layout>
+
+        )}
+
+      </div>    );      const data = await apiClient.getPortfolioSummary();        placeholder="Amount"
+
+    </Layout>
+
+  );  }
+
+}
 
       setSummary(data);        value={amount}
 
