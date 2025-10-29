@@ -128,3 +128,31 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
+// Public market data (CoinGecko)
+export type CoinGeckoMarket = {
+  id: string;
+  symbol: string;
+  name: string;
+  image: string;
+  current_price: number;
+  price_change_percentage_24h: number;
+  market_cap_rank: number;
+};
+
+export async function fetchTopMarkets(perPage: number = 10): Promise<CoinGeckoMarket[]> {
+  const url = 'https://api.coingecko.com/api/v3/coins/markets';
+  const params = {
+    vs_currency: 'usd',
+    order: 'market_cap_desc',
+    per_page: String(perPage),
+    page: '1',
+    price_change_percentage: '24h',
+    sparkline: 'false',
+  } as const;
+
+  const query = new URLSearchParams(params).toString();
+  const res = await fetch(`${url}?${query}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to load markets');
+  return (await res.json()) as CoinGeckoMarket[];
+}
