@@ -1,7 +1,10 @@
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
 sqlalchemy[asyncio]==2.0.35
+# Для продакшена (Render.com с PostgreSQL)
 asyncpg==0.30.0
+# Для локальной разработки (SQLite, не требует компиляции)
+aiosqlite==0.20.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.3.0

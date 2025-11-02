@@ -25,7 +25,6 @@ const Sparkline = ({ data, positive }: SparklineProps) => (
 );
 
 const StakentDashboard = () => {
-  const [activeTab] = useState<'staking' | 'stablecoin'>('staking');
 
   const topAssets = [
     {

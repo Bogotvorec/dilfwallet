@@ -5,31 +5,31 @@ import os
 
 load_dotenv()  # Загружаем .env
 
-def _make_asyncpg_url(url: str | None) -> str:
-    """
-    Приводит URL БД к формату для SQLAlchemy async с asyncpg.
-    Примеры входа:
-    - postgres://user:pass@host:5432/db
-    - postgresql://user:pass@host:5432/db
-    - postgresql+asyncpg://user:pass@host:5432/db
-    """
-    if not url:
-        raise RuntimeError("DATABASE_URL is not set")
+def _get_database_url() -> str:
+    """Определяет URL БД: PostgreSQL для продакшена, SQLite для разработки"""
+    database_url = os.getenv("DATABASE_URL")
+    
+    # Если есть DATABASE_URL и это PostgreSQL - используем его
+    if database_url and (database_url.startswith("postgres://") or database_url.startswith("postgresql://")):
+        # Конвертируем postgres:// в postgresql+asyncpg://
+        if database_url.startswith("postgres://"):
+            return database_url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif database_url.startswith("postgresql://") and "asyncpg" not in database_url:
+            return database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return database_url
+    
+    # По умолчанию для локальной разработки используем SQLite
+    return "sqlite+aiosqlite:///./dilfwallet.db"
 
-    # Render и ряд провайдеров выдают postgres:// — заменяем
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql://", 1)
+DATABASE_URL = _get_database_url()
 
-    # Добавляем драйвер asyncpg, если его нет
-    if url.startswith("postgresql://"):
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+# Параметры для движка
+engine_kwargs = {"echo": True}
+if "sqlite" in DATABASE_URL:
+    # Для SQLite нужно включить check_same_thread=False
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
 
-    return url
-
-DATABASE_URL_RAW = os.getenv("DATABASE_URL")
-DATABASE_URL = _make_asyncpg_url(DATABASE_URL_RAW)
-
-engine = create_async_engine(DATABASE_URL, echo=True)
+engine = create_async_engine(DATABASE_URL, **engine_kwargs)
 AsyncSessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 async def get_db():

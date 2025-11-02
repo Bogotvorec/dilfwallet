@@ -1,11 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, FormEvent } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, CreditCard, Receipt, Wallet, TrendingUp, Vault, FileText, Gift, Settings, HelpCircle, ChevronDown, Plus, Send, FileDown, Filter, ArrowUpDown, MoreHorizontal, Calendar, ArrowUp, ArrowDown, Coins } from 'lucide-react';
+import { LayoutDashboard, CreditCard, Receipt, Wallet, TrendingUp, Vault, FileText, Gift, Settings, HelpCircle, ChevronDown, Plus, Send, FileDown, Filter, ArrowUpDown, MoreHorizontal, Calendar, ArrowUp, ArrowDown, Coins, LogOut } from 'lucide-react';
 import { fetchTopMarkets, type CoinGeckoMarket } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 
 const SequenceDashboard = () => {
+  const { isAuthenticated, user, login, register, logout, loading } = useAuth();
   const [proMode, setProMode] = useState(true);
   const [viewMode, setViewMode] = useState<'weekly' | 'daily'>('weekly');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   const cashFlowData = [
     { date: '18 Oct', income: 4200, expense: -2800 },
@@ -38,6 +46,150 @@ const SequenceDashboard = () => {
       .then(setMarkets)
       .catch((e) => setMarketsError(e.message || 'Failed to load markets'));
   }, []);
+
+  const handleAuthSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    
+    if (authMode === 'register') {
+      if (password !== confirmPassword) {
+        setAuthError('Пароли не совпадают');
+        return;
+      }
+      if (password.length < 6) {
+        setAuthError('Пароль должен содержать минимум 6 символов');
+        return;
+      }
+    }
+
+    setAuthLoading(true);
+    try {
+      if (authMode === 'login') {
+        await login(email, password);
+      } else {
+        await register(email, password);
+      }
+    } catch (err: any) {
+      setAuthError(err.message || `Ошибка ${authMode === 'login' ? 'входа' : 'регистрации'}`);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-gray-500">Загрузка...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <div className="w-full flex items-center justify-center">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <div className="w-8 h-8 grid grid-cols-2 gap-0.5">
+                  <div className="bg-white rounded-sm"></div>
+                  <div className="bg-white rounded-sm"></div>
+                  <div className="bg-white rounded-sm"></div>
+                  <div className="bg-white rounded-sm"></div>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">DILF Wallet</h2>
+              <p className="text-gray-600">
+                {authMode === 'login' ? 'Войдите в аккаунт' : 'Создайте новый аккаунт'}
+              </p>
+            </div>
+
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              {authError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-3">
+                  <p className="text-sm text-red-800">{authError}</p>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Пароль
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder={authMode === 'register' ? 'Минимум 6 символов' : 'Ваш пароль'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+
+              {authMode === 'register' && (
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    Подтвердите пароль
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Повторите пароль"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {authLoading 
+                  ? (authMode === 'login' ? 'Вход...' : 'Регистрация...') 
+                  : (authMode === 'login' ? 'Войти' : 'Зарегистрироваться')
+                }
+              </button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode(authMode === 'login' ? 'register' : 'login');
+                    setAuthError('');
+                  }}
+                  className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                >
+                  {authMode === 'login' 
+                    ? 'Нет аккаунта? Зарегистрироваться' 
+                    : 'Уже есть аккаунт? Войти'
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -135,15 +287,21 @@ const SequenceDashboard = () => {
         </div>
 
         <div className="border-t border-gray-200 p-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-semibold">
-              YA
+              {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
             </div>
-            <div className="flex-1">
-              <div className="font-medium text-gray-900 text-sm">Young Alaska</div>
-              <div className="text-xs text-gray-500">alaskayng@gmail.com</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-900 text-sm truncate">{user?.email?.split('@')[0] || 'User'}</div>
+              <div className="text-xs text-gray-500 truncate">{user?.email || ''}</div>
             </div>
-            <ChevronDown className="w-4 h-4 text-gray-400" />
+            <button
+              onClick={logout}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition"
+              title="Выйти"
+            >
+              <LogOut className="w-4 h-4 text-gray-500" />
+            </button>
           </div>
         </div>
       </div>

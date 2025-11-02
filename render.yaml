@@ -1,14 +1,17 @@
 databases:
   - name: dilfwallet-db
     plan: free
+    databaseName: dilfwallet
+    user: dilfwallet
 
 services:
   - type: web
     name: dilfwallet-backend
     env: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python -c "from app.init_db import init_models; import asyncio; asyncio.run(init_models())"
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: free
     autoDeploy: true
     envVars:
       - key: DATABASE_URL
@@ -17,3 +20,7 @@ services:
           property: connectionString
       - key: SECRET_KEY
         generateValue: true
+      - key: ALLOWED_ORIGINS
+        sync: false
+        # Укажите ваш фронтенд домен после деплоя, например:
+        # https://your-app.vercel.app,https://your-domain.com

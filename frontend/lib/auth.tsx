@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await apiClient.login(email, password);
       localStorage.setItem('token', data.access_token);
       await loadUser();
-      router.push('/portfolio');
+      router.push('/');
     } catch (error: any) {
       console.error('Login error:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Ошибка входа';
