@@ -2,7 +2,10 @@ import axios, { AxiosInstance } from 'axios';
 
 // Определяем backend URL в зависимости от окружения
 const getBackendUrl = () => {
-  // Если есть переменная окружения - используем её
+  // Приоритет: NEXT_PUBLIC_API_BASE_URL (новое) > NEXT_PUBLIC_API_URL (старое)
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
