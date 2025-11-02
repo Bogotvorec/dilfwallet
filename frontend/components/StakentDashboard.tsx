@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { LayoutDashboard, Coins, Server, Calculator, Database, Zap, TrendingUp, Settings, Bell, Search, ExternalLink, Copy, RefreshCw, BarChart3, Info, ChevronDown, ArrowUpRight, Plus } from 'lucide-react';
 
