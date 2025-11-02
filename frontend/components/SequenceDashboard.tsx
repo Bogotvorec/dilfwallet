@@ -1,11 +1,16 @@
 import React, { useEffect, useState, FormEvent } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, CreditCard, Receipt, Wallet, TrendingUp, Vault, FileText, Gift, Settings, HelpCircle, ChevronDown, Plus, Send, FileDown, Filter, ArrowUpDown, MoreHorizontal, Calendar, ArrowUp, ArrowDown, Coins, LogOut } from 'lucide-react';
+import { LayoutDashboard, CreditCard, Receipt, Wallet, TrendingUp, Vault, FileText, Gift, Settings, HelpCircle, ChevronDown, Plus, Send, FileDown, Filter, ArrowUpDown, MoreHorizontal, Calendar, ArrowUp, ArrowDown, Coins, LogOut, X } from 'lucide-react';
 import { fetchTopMarkets, type CoinGeckoMarket } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { usePortfolioSummary, usePortfolio, useTransactions } from '@/hooks/usePortfolio';
+import type { PortfolioEntry } from '@/types/portfolio';
 
 const SequenceDashboard = () => {
   const { isAuthenticated, user, login, register, logout, loading } = useAuth();
+  const { summary, loading: summaryLoading, refresh: refreshSummary } = usePortfolioSummary();
+  const { entries, refresh: refreshPortfolio, addEntry } = usePortfolio();
+  const { transactions, loading: transactionsLoading, refresh: refreshTransactions, createTransaction } = useTransactions();
   const [proMode, setProMode] = useState(true);
   const [viewMode, setViewMode] = useState<'weekly' | 'daily'>('weekly');
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -14,6 +19,23 @@ const SequenceDashboard = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [showPortfolioModal, setShowPortfolioModal] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<PortfolioEntry | null>(null);
+  const [transactionForm, setTransactionForm] = useState({
+    quantity: '',
+    price: '',
+    type: 'buy' as 'buy' | 'sell',
+  });
+  const [portfolioForm, setPortfolioForm] = useState({
+    symbol: '',
+    amount: '',
+    purchase_price: '',
+  });
+  const [transactionLoading, setTransactionLoading] = useState(false);
+  const [transactionError, setTransactionError] = useState('');
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const [portfolioError, setPortfolioError] = useState('');
 
   const cashFlowData = [
     { date: '18 Oct', income: 4200, expense: -2800 },
@@ -30,12 +52,61 @@ const SequenceDashboard = () => {
     { date: '12 Nov', income: 7500, expense: -3800 },
   ];
 
-  const recentActivity = [
-    { name: 'Theo Lawrence', amount: '€ 500,00', usd: '120 USD', date: 'Oct 18, 2024', status: 'Success', method: 'Credit Card', last4: '3560', type: 'add' as const },
-    { name: 'Amy March', amount: '- € 250,00', usd: '80 USD', date: 'May 24, 2024', status: 'Pending', method: 'Bank Transfer', last4: '2285', type: 'subtract' as const },
-    { name: 'Sarah Chen', amount: '€ 1.200,00', usd: '340 USD', date: 'Nov 15, 2024', status: 'Success', method: 'Credit Card', last4: '4521', type: 'add' as const },
-    { name: 'Mike Johnson', amount: '- € 89,50', usd: '25 USD', date: 'Nov 14, 2024', status: 'Success', method: 'Debit Card', last4: '7812', type: 'subtract' as const },
-  ];
+  const handleCreateTransaction = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedEntry) return;
+
+    setTransactionError('');
+    setTransactionLoading(true);
+
+    try {
+      await createTransaction({
+        coin: selectedEntry.symbol,
+        quantity: parseFloat(transactionForm.quantity),
+        price: parseFloat(transactionForm.price),
+        type: transactionForm.type,
+        portfolio_entry_id: selectedEntry.id,
+      });
+      
+      // Обновляем данные
+      await Promise.all([refreshSummary(), refreshPortfolio(), refreshTransactions()]);
+      
+      // Закрываем модалку и очищаем форму
+      setShowTransactionModal(false);
+      setSelectedEntry(null);
+      setTransactionForm({ quantity: '', price: '', type: 'buy' });
+    } catch (err: any) {
+      setTransactionError(err.response?.data?.detail || err.message || 'Ошибка создания транзакции');
+    } finally {
+      setTransactionLoading(false);
+    }
+  };
+
+  const handleAddPortfolioEntry = async (e: FormEvent) => {
+    e.preventDefault();
+
+    setPortfolioError('');
+    setPortfolioLoading(true);
+
+    try {
+      await addEntry({
+        symbol: portfolioForm.symbol.toUpperCase(),
+        amount: parseFloat(portfolioForm.amount),
+        purchase_price: parseFloat(portfolioForm.purchase_price),
+      });
+      
+      // Обновляем данные
+      await Promise.all([refreshSummary(), refreshPortfolio()]);
+      
+      // Закрываем модалку и очищаем форму
+      setShowPortfolioModal(false);
+      setPortfolioForm({ symbol: '', amount: '', purchase_price: '' });
+    } catch (err: any) {
+      setPortfolioError(err.response?.data?.detail || err.message || 'Ошибка добавления записи портфеля');
+    } finally {
+      setPortfolioLoading(false);
+    }
+  };
 
   const maxValue = Math.max(...cashFlowData.flatMap(d => [Math.abs(d.income), Math.abs(d.expense)]));
 
@@ -338,16 +409,48 @@ const SequenceDashboard = () => {
             <div className="flex items-start justify-between">
               <div>
                 <div className="text-sm font-medium text-teal-100 mb-2">Total Balance</div>
-                <div className="text-5xl font-bold mb-2">€ 320.845,20</div>
-                <div className="flex items-center gap-2 text-teal-100">
-                  <span className="text-lg font-semibold text-emerald-300">15,8%</span>
-                  <ArrowUp className="w-4 h-4" />
-                </div>
+                {summaryLoading ? (
+                  <div className="text-5xl font-bold mb-2">Loading...</div>
+                ) : (
+                  <>
+                    <div className="text-5xl font-bold mb-2">
+                      ${summary?.total_current_value?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                    </div>
+                    <div className="flex items-center gap-2 text-teal-100">
+                      <span className={`text-lg font-semibold ${summary && summary.total_profit_loss_percentage >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                        {summary && summary.total_profit_loss_percentage !== null 
+                          ? `${summary.total_profit_loss_percentage >= 0 ? '+' : ''}${summary.total_profit_loss_percentage.toFixed(2)}%`
+                          : '0.00%'}
+                      </span>
+                      {summary && summary.total_profit_loss_percentage >= 0 ? (
+                        <ArrowUp className="w-4 h-4" />
+                      ) : (
+                        <ArrowDown className="w-4 h-4" />
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
               <div className="flex gap-2">
-                <button className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-medium flex items-center gap-2 transition">
+                <button 
+                  onClick={() => setShowPortfolioModal(true)}
+                  className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-medium flex items-center gap-2 transition"
+                >
                   <Plus className="w-4 h-4" />
-                  Add
+                  Add Asset
+                </button>
+                <button 
+                  onClick={() => {
+                    if (entries.length > 0) {
+                      setSelectedEntry(entries[0]);
+                    }
+                    setShowTransactionModal(true);
+                  }}
+                  disabled={entries.length === 0}
+                  className="px-4 py-2.5 bg-teal-700 hover:bg-teal-800 disabled:bg-gray-400 disabled:cursor-not-allowed rounded-xl font-medium flex items-center gap-2 transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Transaction
                 </button>
                 <button className="px-4 py-2.5 bg-teal-700 hover:bg-teal-800 rounded-xl font-medium flex items-center gap-2 transition">
                   <Send className="w-4 h-4" />
@@ -536,40 +639,54 @@ const SequenceDashboard = () => {
               </div>
 
               <div className="p-6">
-                <div className="space-y-1">
-                  <div className="grid grid-cols-4 gap-4 pb-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <div>TYPE</div>
-                    <div>AMOUNT</div>
-                    <div>STATUS</div>
-                    <div>METHOD</div>
+                {transactionsLoading ? (
+                  <div className="text-sm text-gray-500 text-center py-8">Loading transactions...</div>
+                ) : transactions.length === 0 ? (
+                  <div className="text-sm text-gray-500 text-center py-8">
+                    No transactions yet. Add your first transaction to get started!
                   </div>
-                  {recentActivity.map((activity, idx) => (
-                    <div key={idx} className="grid grid-cols-4 gap-4 py-4 border-t border-gray-100 hover:bg-gray-50 rounded-lg px-2">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 ${activity.type === 'add' ? 'bg-emerald-100' : 'bg-gray-100'} rounded-xl flex items-center justify-center`}>
-                          {activity.type === 'add' ? <Plus className="w-5 h-5 text-emerald-600" /> : <ArrowUp className="w-5 h-5 text-gray-600" />}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900 text-sm">{activity.name}</div>
-                          <div className="text-xs text-gray-400">Add • {activity.date}</div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-900">{activity.amount}</div>
-                        <div className="text-xs text-gray-400">{activity.usd}</div>
-                      </div>
-                      <div>
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${activity.status === 'Success' ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          {activity.status}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900 text-sm">{activity.method}</div>
-                        <div className="text-xs text-gray-400">•••• {activity.last4}</div>
-                      </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="grid grid-cols-4 gap-4 pb-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <div>COIN</div>
+                      <div>AMOUNT</div>
+                      <div>PRICE</div>
+                      <div>DATE</div>
                     </div>
-                  ))}
-                </div>
+                    {transactions.slice(0, 10).map((tx) => {
+                      const date = new Date(tx.date);
+                      return (
+                        <div key={tx.id} className="grid grid-cols-4 gap-4 py-4 border-t border-gray-100 hover:bg-gray-50 rounded-lg px-2">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 ${tx.type === 'buy' ? 'bg-emerald-100' : 'bg-red-100'} rounded-xl flex items-center justify-center`}>
+                              {tx.type === 'buy' ? (
+                                <Plus className="w-5 h-5 text-emerald-600" />
+                              ) : (
+                                <ArrowUp className="w-5 h-5 text-red-600" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900 text-sm uppercase">{tx.coin}</div>
+                              <div className="text-xs text-gray-400">{tx.type === 'buy' ? 'Buy' : 'Sell'}</div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-900">{tx.quantity}</div>
+                            <div className="text-xs text-gray-400">{tx.coin}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900 text-sm">${Number(tx.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                            <div className="text-xs text-gray-400">Total: ${(Number(tx.quantity) * Number(tx.price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900 text-sm">{date.toLocaleDateString()}</div>
+                            <div className="text-xs text-gray-400">{date.toLocaleTimeString()}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -615,6 +732,231 @@ const SequenceDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Portfolio Entry Modal */}
+      {showPortfolioModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Add Portfolio Asset</h2>
+              <button
+                onClick={() => {
+                  setShowPortfolioModal(false);
+                  setPortfolioForm({ symbol: '', amount: '', purchase_price: '' });
+                  setPortfolioError('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddPortfolioEntry} className="space-y-4">
+              {portfolioError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-3">
+                  <p className="text-sm text-red-800">{portfolioError}</p>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="symbol" className="block text-sm font-medium text-gray-700 mb-1">
+                  Symbol (e.g., BTC, ETH)
+                </label>
+                <input
+                  id="symbol"
+                  type="text"
+                  required
+                  value={portfolioForm.symbol}
+                  onChange={(e) => setPortfolioForm({ ...portfolioForm, symbol: e.target.value.toUpperCase() })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="BTC"
+                  maxLength={10}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount
+                </label>
+                <input
+                  id="amount"
+                  type="number"
+                  step="0.00000001"
+                  required
+                  min="0"
+                  value={portfolioForm.amount}
+                  onChange={(e) => setPortfolioForm({ ...portfolioForm, amount: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="0.00000000"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="purchase_price" className="block text-sm font-medium text-gray-700 mb-1">
+                  Purchase Price (USD)
+                </label>
+                <input
+                  id="purchase_price"
+                  type="number"
+                  step="0.01"
+                  required
+                  min="0"
+                  value={portfolioForm.purchase_price}
+                  onChange={(e) => setPortfolioForm({ ...portfolioForm, purchase_price: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPortfolioModal(false);
+                    setPortfolioForm({ symbol: '', amount: '', purchase_price: '' });
+                    setPortfolioError('');
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={portfolioLoading}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {portfolioLoading ? 'Adding...' : 'Add Asset'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Modal */}
+      {showTransactionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Add Transaction</h2>
+              <button
+                onClick={() => {
+                  setShowTransactionModal(false);
+                  setSelectedEntry(null);
+                  setTransactionForm({ quantity: '', price: '', type: 'buy' });
+                  setTransactionError('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTransaction} className="space-y-4">
+              {transactionError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-3">
+                  <p className="text-sm text-red-800">{transactionError}</p>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="portfolio_entry" className="block text-sm font-medium text-gray-700 mb-1">
+                  Portfolio Entry
+                </label>
+                <select
+                  id="portfolio_entry"
+                  required
+                  value={selectedEntry?.id || ''}
+                  onChange={(e) => {
+                    const entry = entries.find(ent => ent.id === Number(e.target.value));
+                    setSelectedEntry(entry || null);
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="">Select portfolio entry</option>
+                  {entries.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.symbol} - {entry.amount} @ ${entry.purchase_price.toFixed(2)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+                  Type
+                </label>
+                <select
+                  id="type"
+                  required
+                  value={transactionForm.type}
+                  onChange={(e) => setTransactionForm({ ...transactionForm, type: e.target.value as 'buy' | 'sell' })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="buy">Buy</option>
+                  <option value="sell">Sell</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
+                  Quantity
+                </label>
+                <input
+                  id="quantity"
+                  type="number"
+                  step="0.00000001"
+                  required
+                  min="0"
+                  value={transactionForm.quantity}
+                  onChange={(e) => setTransactionForm({ ...transactionForm, quantity: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="0.00000000"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                  Price (USD)
+                </label>
+                <input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  required
+                  min="0"
+                  value={transactionForm.price}
+                  onChange={(e) => setTransactionForm({ ...transactionForm, price: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTransactionModal(false);
+                    setSelectedEntry(null);
+                    setTransactionForm({ quantity: '', price: '', type: 'buy' });
+                    setTransactionError('');
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={transactionLoading || !selectedEntry}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {transactionLoading ? 'Creating...' : 'Create Transaction'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
