@@ -61,7 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (email: string, password: string) => {
     try {
-      console.log('Attempting registration with:', { email, apiUrl: 'http://localhost:8000' });
       await apiClient.register(email, password);
       console.log('Registration successful, logging in...');
       // После регистрации автоматически логинимся
