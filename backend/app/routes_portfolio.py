@@ -13,7 +13,7 @@ from app.schemas import (
     PortfolioSummary, PortfolioItemSummary, TransactionCreate, TransactionRead, 
     TransactionWithPL
 )
-from app.price_service import get_multiple_prices
+from app.price_service import get_multiple_prices_by_type
 from typing import List, Dict
 from collections import defaultdict
 
@@ -280,11 +280,9 @@ async def get_portfolio_summary(
     for tx in all_transactions:
         tx_by_entry[tx.portfolio_entry_id].append(tx)
     
-    # Get current prices (only for crypto for now)
+    # Get current prices for all portfolio types
     symbols = list(set([e.symbol for e in entries]))
-    prices = {}
-    if portfolio.type == PortfolioType.crypto:
-        prices = await get_multiple_prices(symbols)
+    prices = await get_multiple_prices_by_type(symbols, portfolio.type.value)
     
     items = []
     total_invested = 0.0

@@ -149,7 +149,7 @@ export default function TransactionsPage() {
 
           {portfolio.length === 0 ? (
             <div className="text-center py-6" style={{ color: 'var(--foreground-muted)' }}>
-              📭 Сначала добавьте актив в <a href="/portfolio" className="text-blue-400 hover:underline">портфолио</a>
+              📭 Сначала создайте портфель в <a href="/portfolios" className="text-blue-400 hover:underline">списке портфелей</a>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-4">

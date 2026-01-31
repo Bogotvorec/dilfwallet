@@ -1,10 +1,29 @@
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { ReactNode } from 'react';
+import { useRouter } from 'next/router';
 
 interface LayoutProps {
   children: ReactNode;
 }
+
+const NavLink = ({ href, children }: { href: string; children: ReactNode }) => {
+  const router = useRouter();
+  const isActive = router.pathname === href || router.pathname.startsWith(href + '/');
+
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300"
+      style={{
+        color: isActive ? 'var(--foreground)' : 'var(--foreground-muted)',
+        background: isActive ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+      }}
+    >
+      {children}
+    </Link>
+  );
+};
 
 export default function Layout({ children }: LayoutProps) {
   const { user, logout, isAuthenticated } = useAuth();
@@ -33,34 +52,12 @@ export default function Layout({ children }: LayoutProps) {
 
               {isAuthenticated && (
                 <div className="hidden sm:ml-8 sm:flex sm:space-x-1">
-                  <Link
-                    href="/portfolio"
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300"
-                    style={{ color: 'var(--foreground)' }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                  >
-                    📊 Портфолио
-                  </Link>
-                  <Link
-                    href="/transactions"
-                    className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300"
-                    style={{ color: 'var(--foreground-muted)' }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
-                      e.currentTarget.style.color = 'var(--foreground)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'var(--foreground-muted)';
-                    }}
-                  >
-                    💱 Транзакции
-                  </Link>
+                  <NavLink href="/portfolios">
+                    💼 Портфели
+                  </NavLink>
+                  <NavLink href="/budget">
+                    💰 Бюджет
+                  </NavLink>
                 </div>
               )}
             </div>
@@ -85,8 +82,6 @@ export default function Layout({ children }: LayoutProps) {
                     href="/login"
                     className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300"
                     style={{ color: 'var(--foreground-muted)' }}
-                    onMouseOver={(e) => e.currentTarget.style.color = 'var(--foreground)'}
-                    onMouseOut={(e) => e.currentTarget.style.color = 'var(--foreground-muted)'}
                   >
                     Войти
                   </Link>
@@ -103,6 +98,19 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </nav>
 
+      {/* Mobile nav */}
+      {isAuthenticated && (
+        <div className="sm:hidden border-b" style={{
+          background: 'var(--background-secondary)',
+          borderColor: 'rgba(99, 102, 241, 0.1)'
+        }}>
+          <div className="flex justify-center space-x-2 py-2">
+            <NavLink href="/portfolios">💼 Портфели</NavLink>
+            <NavLink href="/budget">💰 Бюджет</NavLink>
+          </div>
+        </div>
+      )}
+
       {/* Main content */}
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {children}
@@ -116,7 +124,7 @@ export default function Layout({ children }: LayoutProps) {
       }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p style={{ color: 'var(--foreground-muted)', fontSize: '0.875rem' }}>
-            💰 DILFwallet — Крипто-портфолио трекер
+            💰 DILFwallet v2.0 — Мульти-портфели | Бюджет | Крипто, Акции, ETF, Металлы
           </p>
         </div>
       </footer>

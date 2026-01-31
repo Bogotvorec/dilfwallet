@@ -27,8 +27,8 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {isAuthenticated ? (
               <>
-                <Link href="/portfolio" className="btn-primary text-lg px-8 py-4">
-                  📊 Мой портфолио
+                <Link href="/portfolios" className="btn-primary text-lg px-8 py-4">
+                  💼 Мои портфели
                 </Link>
                 <Link href="/transactions" className="btn-success text-lg px-8 py-4">
                   💱 Транзакции
