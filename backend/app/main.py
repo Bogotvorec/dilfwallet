@@ -15,6 +15,10 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    # Production domains
+    "https://dilfwallet.vercel.app",
+    "https://www.dilfwallet.com",
+    "https://dilfwallet.com",
 ]
 
 codespace_name = os.getenv("CODESPACE_NAME")
