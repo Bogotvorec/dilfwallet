@@ -3,16 +3,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes_auth import router as auth_router
 from app.routes_portfolio import router as portfolio_router
+from app.routes_budget import router as budget_router
 
-app = FastAPI()
+app = FastAPI(
+    title="DILFwallet API",
+    description="Multi-portfolio crypto, stocks, ETF, metals tracker with budget management",
+    version="2.0.0"
+)
 
-# CORS: разрешаем запросы с веб-клиента
+# CORS
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
 
-# Добавляем Codespaces URL если запущено в Codespaces
 codespace_name = os.getenv("CODESPACE_NAME")
 if codespace_name:
     origins.extend([
@@ -20,8 +24,6 @@ if codespace_name:
         f"https://{codespace_name}-8000.app.github.dev",
     ])
 
-# Читаем дополнительные домены для прод-окружения из переменной окружения
-# Пример: ALLOWED_ORIGINS="https://your-project.web.app,https://your-project.firebaseapp.com,https://your-domain.com"
 extra_origins = os.getenv("ALLOWED_ORIGINS")
 if extra_origins:
     for item in extra_origins.split(","):
@@ -39,7 +41,15 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(portfolio_router)
+app.include_router(budget_router)
 
 @app.get("/")
 def root():
-    return {"message": "DILFwallet backend running!"}
+    return {
+        "message": "DILFwallet API v2.0",
+        "features": [
+            "Multi-portfolio support (crypto, stocks, ETF, metals)",
+            "Budget tracking (income/expenses)",
+            "JWT authentication"
+        ]
+    }

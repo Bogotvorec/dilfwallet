@@ -41,22 +41,30 @@ export default function RegisterPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+      <div className="min-h-[70vh] flex items-center justify-center py-12 px-4 animate-fadeIn">
+        <div className="w-full max-w-md">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">✨</div>
+            <h2 className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>
               Создать аккаунт
             </h2>
+            <p style={{ color: 'var(--foreground-muted)' }} className="mt-2">
+              Начните отслеживать свои криптоактивы
+            </p>
           </div>
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            )}
-            <div className="rounded-md shadow-sm -space-y-px">
+
+          {/* Register form */}
+          <div className="card p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="error-message text-sm animate-fadeIn">
+                  ⚠️ {error}
+                </div>
+              )}
+
               <div>
-                <label htmlFor="email" className="sr-only">
+                <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--foreground-muted)' }}>
                   Email
                 </label>
                 <input
@@ -65,76 +73,94 @@ export default function RegisterPage() {
                   type="email"
                   autoComplete="email"
                   required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Email"
+                  className="input-dark"
+                  placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              <div className="relative">
-                <label htmlFor="password" className="sr-only">
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium mb-2" style={{ color: 'var(--foreground-muted)' }}>
                   Пароль
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Пароль (минимум 6 символов)"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? '🙈' : '👁️'}
-                </button>
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    className="input-dark pr-12"
+                    placeholder="Минимум 6 символов"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-xl"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ color: 'var(--foreground-muted)' }}
+                  >
+                    {showPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
               </div>
-              <div className="relative">
-                <label htmlFor="confirm-password" className="sr-only">
+
+              <div>
+                <label htmlFor="confirm-password" className="block text-sm font-medium mb-2" style={{ color: 'var(--foreground-muted)' }}>
                   Подтвердите пароль
                 </label>
-                <input
-                  id="confirm-password"
-                  name="confirm-password"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Подтвердите пароль"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? '🙈' : '👁️'}
-                </button>
+                <div className="relative">
+                  <input
+                    id="confirm-password"
+                    name="confirm-password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    className="input-dark pr-12"
+                    placeholder="Повторите пароль"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-xl"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{ color: 'var(--foreground-muted)' }}
+                  >
+                    {showConfirmPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div>
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="btn-primary w-full text-center"
               >
-                {loading ? 'Регистрация...' : 'Зарегистрироваться'}
+                {loading ? (
+                  <span className="flex items-center justify-center">
+                    <div className="loader w-5 h-5 mr-2" style={{ borderWidth: '2px' }}></div>
+                    Регистрация...
+                  </span>
+                ) : (
+                  '🚀 Зарегистрироваться'
+                )}
               </button>
-            </div>
 
-            <div className="text-center">
-              <Link href="/login" className="text-sm text-blue-600 hover:text-blue-500">
-                Уже есть аккаунт? Войти
-              </Link>
-            </div>
-          </form>
+              <div className="text-center pt-4" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <span style={{ color: 'var(--foreground-muted)' }}>Уже есть аккаунт? </span>
+                <Link
+                  href="/login"
+                  className="font-medium hover:underline"
+                  style={{ color: 'var(--accent-primary)' }}
+                >
+                  Войти
+                </Link>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </Layout>
