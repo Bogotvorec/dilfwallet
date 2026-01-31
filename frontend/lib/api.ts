@@ -101,6 +101,28 @@ export interface BudgetSummary {
   categories: BudgetCategory[];
 }
 
+// Chart Data Types
+export interface CategoryChartData {
+  category: string;
+  total: number;
+  icon: string;
+}
+
+export interface DailyTotals {
+  date: string;
+  income: number;
+  expense: number;
+  balance: number;
+}
+
+export interface BudgetChartData {
+  expense_by_category: CategoryChartData[];
+  income_by_category: CategoryChartData[];
+  daily_totals: DailyTotals[];
+  total_income: number;
+  total_expense: number;
+}
+
 class ApiClient {
   private client: AxiosInstance;
 
@@ -267,6 +289,57 @@ class ApiClient {
   async getBudgetSummary(period: 'week' | 'month' | 'year' | 'all' = 'month'): Promise<BudgetSummary> {
     const response = await this.client.get('/budget/summary', { params: { period } });
     return response.data;
+  }
+
+  // ========== Chart Data ==========
+
+  async getBudgetChartData(period: 'week' | 'month' | 'year' | 'all' = 'month'): Promise<BudgetChartData> {
+    const response = await this.client.get('/budget/chart-data', { params: { period } });
+    return response.data;
+  }
+
+  // ========== Export ==========
+
+  async exportBudgetCSV(period: 'week' | 'month' | 'year' | 'all' = 'month'): Promise<void> {
+    const response = await this.client.get('/budget/export/csv', {
+      params: { period },
+      responseType: 'blob'
+    });
+    this.downloadFile(response.data, `budget_export_${period}.csv`, 'text/csv');
+  }
+
+  async exportBudgetJSON(period: 'week' | 'month' | 'year' | 'all' = 'month'): Promise<void> {
+    const response = await this.client.get('/budget/export/json', {
+      params: { period },
+      responseType: 'blob'
+    });
+    this.downloadFile(response.data, `budget_export_${period}.json`, 'application/json');
+  }
+
+  async exportPortfolioCSV(portfolioId: number): Promise<void> {
+    const response = await this.client.get(`/portfolios/${portfolioId}/export/csv`, {
+      responseType: 'blob'
+    });
+    this.downloadFile(response.data, `portfolio_${portfolioId}.csv`, 'text/csv');
+  }
+
+  async exportPortfolioJSON(portfolioId: number): Promise<void> {
+    const response = await this.client.get(`/portfolios/${portfolioId}/export/json`, {
+      responseType: 'blob'
+    });
+    this.downloadFile(response.data, `portfolio_${portfolioId}.json`, 'application/json');
+  }
+
+  private downloadFile(data: Blob, filename: string, mimeType: string): void {
+    const blob = new Blob([data], { type: mimeType });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   }
 }
 

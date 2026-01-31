@@ -149,3 +149,24 @@ class BudgetSummary(BaseModel):
     balance: float
     transactions: List[BudgetTransactionRead]
     categories: List[BudgetCategoryRead]
+
+
+# ========== Chart Data Schemas ==========
+
+class CategoryChartData(BaseModel):
+    category: str
+    total: float
+    icon: str
+
+class DailyTotals(BaseModel):
+    date: str
+    income: float
+    expense: float
+    balance: float
+
+class BudgetChartData(BaseModel):
+    expense_by_category: List[CategoryChartData]
+    income_by_category: List[CategoryChartData]
+    daily_totals: List[DailyTotals]
+    total_income: float
+    total_expense: float

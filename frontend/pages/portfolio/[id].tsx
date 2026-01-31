@@ -28,6 +28,7 @@ export default function PortfolioDetailPage() {
     const [amount, setAmount] = useState('');
     const [price, setPrice] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
         if (!authLoading && user && router.isReady && id) {
@@ -57,6 +58,32 @@ export default function PortfolioDetailPage() {
             }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExportCSV = async () => {
+        if (!portfolioId || isNaN(portfolioId)) return;
+        try {
+            setExporting(true);
+            await apiClient.exportPortfolioCSV(portfolioId);
+        } catch (err: any) {
+            console.error('Export failed:', err);
+            setError('Ошибка экспорта CSV');
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const handleExportJSON = async () => {
+        if (!portfolioId || isNaN(portfolioId)) return;
+        try {
+            setExporting(true);
+            await apiClient.exportPortfolioJSON(portfolioId);
+        } catch (err: any) {
+            console.error('Export failed:', err);
+            setError('Ошибка экспорта JSON');
+        } finally {
+            setExporting(false);
         }
     };
 
@@ -144,12 +171,28 @@ export default function PortfolioDetailPage() {
                             </p>
                         </div>
                     </div>
-                    <button
-                        className={showAddForm ? 'btn-danger' : 'btn-primary'}
-                        onClick={() => setShowAddForm(v => !v)}
-                    >
-                        {showAddForm ? '✕ Закрыть' : '+ Добавить актив'}
-                    </button>
+                    <div className="flex gap-2 flex-wrap">
+                        <button
+                            className="btn-secondary"
+                            onClick={handleExportCSV}
+                            disabled={exporting}
+                        >
+                            {exporting ? '⏳' : '📥'} CSV
+                        </button>
+                        <button
+                            className="btn-secondary"
+                            onClick={handleExportJSON}
+                            disabled={exporting}
+                        >
+                            {exporting ? '⏳' : '📥'} JSON
+                        </button>
+                        <button
+                            className={showAddForm ? 'btn-danger' : 'btn-primary'}
+                            onClick={() => setShowAddForm(v => !v)}
+                        >
+                            {showAddForm ? '✕ Закрыть' : '+ Добавить'}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Error */}

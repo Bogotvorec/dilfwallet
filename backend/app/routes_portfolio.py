@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -16,6 +17,10 @@ from app.schemas import (
 from app.price_service import get_multiple_prices_by_type
 from typing import List, Dict
 from collections import defaultdict
+from datetime import datetime
+import csv
+import io
+import json
 
 router = APIRouter()
 
@@ -477,3 +482,164 @@ async def get_transactions(
             portfolio_entry_id=tx.portfolio_entry_id
         ) for tx in transactions
     ]
+
+
+# ========== Export ==========
+
+@router.get("/portfolios/{portfolio_id}/export/csv")
+async def export_portfolio_csv(
+    portfolio_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """Export portfolio as CSV file"""
+    # Get portfolio
+    pf_result = await db.execute(
+        select(Portfolio).where(
+            Portfolio.id == portfolio_id,
+            Portfolio.user_id == user.id
+        )
+    )
+    portfolio = pf_result.scalars().first()
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    
+    # Get entries with transactions
+    entries_result = await db.execute(
+        select(PortfolioEntry).where(PortfolioEntry.portfolio_id == portfolio_id)
+    )
+    entries = entries_result.scalars().all()
+    
+    entry_ids = [e.id for e in entries]
+    tx_result = await db.execute(
+        select(Transaction)
+        .where(Transaction.portfolio_entry_id.in_(entry_ids))
+        .order_by(Transaction.date.desc())
+    ) if entry_ids else None
+    transactions = tx_result.scalars().all() if tx_result else []
+    
+    # Build CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    now = datetime.utcnow()
+    
+    # Portfolio info
+    writer.writerow(["Portfolio Export", portfolio.name])
+    writer.writerow(["Type", portfolio.type.value])
+    writer.writerow(["Export Date", now.strftime("%Y-%m-%d %H:%M")])
+    writer.writerow([])
+    
+    # Holdings section
+    writer.writerow(["=== HOLDINGS ==="])
+    writer.writerow(["Symbol", "Amount", "Avg Purchase Price", "Total Invested"])
+    for entry in entries:
+        writer.writerow([
+            entry.symbol,
+            entry.amount,
+            entry.purchase_price,
+            entry.amount * entry.purchase_price
+        ])
+    writer.writerow([])
+    
+    # Transactions section
+    writer.writerow(["=== TRANSACTIONS ==="])
+    writer.writerow(["Date", "Symbol", "Type", "Quantity", "Price", "Total"])
+    for tx in transactions:
+        writer.writerow([
+            tx.date.strftime("%Y-%m-%d %H:%M"),
+            tx.symbol,
+            tx.type.value.upper(),
+            float(tx.quantity),
+            float(tx.price),
+            float(tx.quantity) * float(tx.price)
+        ])
+    
+    output.seek(0)
+    
+    filename = f"portfolio_{portfolio.name.replace(' ', '_')}_{now.strftime('%Y%m%d')}.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/portfolios/{portfolio_id}/export/json")
+async def export_portfolio_json(
+    portfolio_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """Export portfolio as JSON file"""
+    # Get portfolio
+    pf_result = await db.execute(
+        select(Portfolio).where(
+            Portfolio.id == portfolio_id,
+            Portfolio.user_id == user.id
+        )
+    )
+    portfolio = pf_result.scalars().first()
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    
+    # Get entries with transactions
+    entries_result = await db.execute(
+        select(PortfolioEntry).where(PortfolioEntry.portfolio_id == portfolio_id)
+    )
+    entries = entries_result.scalars().all()
+    
+    entry_ids = [e.id for e in entries]
+    tx_result = await db.execute(
+        select(Transaction)
+        .where(Transaction.portfolio_entry_id.in_(entry_ids))
+        .order_by(Transaction.date.desc())
+    ) if entry_ids else None
+    transactions = tx_result.scalars().all() if tx_result else []
+    
+    now = datetime.utcnow()
+    
+    # Build JSON
+    data = {
+        "export_date": now.isoformat(),
+        "portfolio": {
+            "id": portfolio.id,
+            "name": portfolio.name,
+            "type": portfolio.type.value,
+            "created_at": portfolio.created_at.isoformat()
+        },
+        "holdings": [
+            {
+                "symbol": entry.symbol,
+                "amount": entry.amount,
+                "avg_purchase_price": entry.purchase_price,
+                "total_invested": entry.amount * entry.purchase_price
+            }
+            for entry in entries
+        ],
+        "transactions": [
+            {
+                "id": str(tx.id),
+                "date": tx.date.isoformat(),
+                "symbol": tx.symbol,
+                "type": tx.type.value,
+                "quantity": float(tx.quantity),
+                "price": float(tx.price),
+                "total": float(tx.quantity) * float(tx.price)
+            }
+            for tx in transactions
+        ]
+    }
+    
+    output = io.StringIO()
+    json.dump(data, output, indent=2, ensure_ascii=False)
+    output.seek(0)
+    
+    filename = f"portfolio_{portfolio.name.replace(' ', '_')}_{now.strftime('%Y%m%d')}.json"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

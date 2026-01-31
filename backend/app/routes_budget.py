@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -9,10 +10,14 @@ from app.models import User, BudgetCategory, BudgetTransaction, BudgetType, DEFA
 from app.schemas import (
     BudgetCategoryCreate, BudgetCategoryRead,
     BudgetTransactionCreate, BudgetTransactionRead,
-    BudgetSummary
+    BudgetSummary, BudgetChartData, CategoryChartData, DailyTotals
 )
 from typing import List, Optional
 from datetime import datetime, timedelta
+from collections import defaultdict
+import csv
+import io
+import json
 
 router = APIRouter(prefix="/budget", tags=["Budget"])
 
@@ -294,4 +299,205 @@ async def get_summary(
                 icon=c.icon
             ) for c in categories
         ]
+    )
+
+
+# ========== Chart Data ==========
+
+@router.get("/chart-data", response_model=BudgetChartData)
+async def get_chart_data(
+    period: str = Query("month", pattern="^(week|month|year|all)$"),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """Get aggregated data for budget charts"""
+    # Calculate date range
+    now = datetime.utcnow()
+    if period == "week":
+        start_date = now - timedelta(days=7)
+    elif period == "month":
+        start_date = now - timedelta(days=30)
+    elif period == "year":
+        start_date = now - timedelta(days=365)
+    else:
+        start_date = None
+    
+    # Get transactions with categories
+    tx_query = select(BudgetTransaction).where(BudgetTransaction.user_id == user.id)
+    if start_date:
+        tx_query = tx_query.where(BudgetTransaction.date >= start_date)
+    tx_query = tx_query.options(selectinload(BudgetTransaction.category))
+    tx_query = tx_query.order_by(BudgetTransaction.date.asc())
+    
+    result = await db.execute(tx_query)
+    transactions = result.scalars().all()
+    
+    # Aggregate by category
+    expense_by_cat = defaultdict(lambda: {"total": 0.0, "icon": "💰"})
+    income_by_cat = defaultdict(lambda: {"total": 0.0, "icon": "💰"})
+    
+    # Aggregate by day
+    daily_data = defaultdict(lambda: {"income": 0.0, "expense": 0.0})
+    
+    total_income = 0.0
+    total_expense = 0.0
+    
+    for tx in transactions:
+        if not tx.category:
+            continue
+            
+        date_key = tx.date.strftime("%Y-%m-%d")
+        
+        if tx.category.type == BudgetType.income:
+            income_by_cat[tx.category.name]["total"] += tx.amount
+            income_by_cat[tx.category.name]["icon"] = tx.category.icon
+            daily_data[date_key]["income"] += tx.amount
+            total_income += tx.amount
+        else:
+            expense_by_cat[tx.category.name]["total"] += tx.amount
+            expense_by_cat[tx.category.name]["icon"] = tx.category.icon
+            daily_data[date_key]["expense"] += tx.amount
+            total_expense += tx.amount
+    
+    # Build daily totals with running balance
+    sorted_dates = sorted(daily_data.keys())
+    running_balance = 0.0
+    daily_totals = []
+    
+    for date in sorted_dates:
+        data = daily_data[date]
+        running_balance += data["income"] - data["expense"]
+        daily_totals.append(DailyTotals(
+            date=date,
+            income=data["income"],
+            expense=data["expense"],
+            balance=running_balance
+        ))
+    
+    return BudgetChartData(
+        expense_by_category=[
+            CategoryChartData(category=name, total=data["total"], icon=data["icon"])
+            for name, data in sorted(expense_by_cat.items(), key=lambda x: -x[1]["total"])
+        ],
+        income_by_category=[
+            CategoryChartData(category=name, total=data["total"], icon=data["icon"])
+            for name, data in sorted(income_by_cat.items(), key=lambda x: -x[1]["total"])
+        ],
+        daily_totals=daily_totals,
+        total_income=total_income,
+        total_expense=total_expense
+    )
+
+
+# ========== Export ==========
+
+@router.get("/export/csv")
+async def export_budget_csv(
+    period: str = Query("month", pattern="^(week|month|year|all)$"),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """Export budget transactions as CSV file"""
+    # Calculate date range
+    now = datetime.utcnow()
+    if period == "week":
+        start_date = now - timedelta(days=7)
+    elif period == "month":
+        start_date = now - timedelta(days=30)
+    elif period == "year":
+        start_date = now - timedelta(days=365)
+    else:
+        start_date = None
+    
+    # Get transactions
+    tx_query = select(BudgetTransaction).where(BudgetTransaction.user_id == user.id)
+    if start_date:
+        tx_query = tx_query.where(BudgetTransaction.date >= start_date)
+    tx_query = tx_query.options(selectinload(BudgetTransaction.category))
+    tx_query = tx_query.order_by(BudgetTransaction.date.desc())
+    
+    result = await db.execute(tx_query)
+    transactions = result.scalars().all()
+    
+    # Build CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Date", "Category", "Type", "Amount", "Description"])
+    
+    for tx in transactions:
+        writer.writerow([
+            tx.date.strftime("%Y-%m-%d %H:%M"),
+            tx.category.name if tx.category else "Unknown",
+            tx.category.type.value if tx.category else "unknown",
+            tx.amount,
+            tx.description
+        ])
+    
+    output.seek(0)
+    
+    filename = f"budget_export_{period}_{now.strftime('%Y%m%d')}.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/export/json")
+async def export_budget_json(
+    period: str = Query("month", pattern="^(week|month|year|all)$"),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    """Export budget transactions as JSON file"""
+    # Calculate date range
+    now = datetime.utcnow()
+    if period == "week":
+        start_date = now - timedelta(days=7)
+    elif period == "month":
+        start_date = now - timedelta(days=30)
+    elif period == "year":
+        start_date = now - timedelta(days=365)
+    else:
+        start_date = None
+    
+    # Get transactions
+    tx_query = select(BudgetTransaction).where(BudgetTransaction.user_id == user.id)
+    if start_date:
+        tx_query = tx_query.where(BudgetTransaction.date >= start_date)
+    tx_query = tx_query.options(selectinload(BudgetTransaction.category))
+    tx_query = tx_query.order_by(BudgetTransaction.date.desc())
+    
+    result = await db.execute(tx_query)
+    transactions = result.scalars().all()
+    
+    # Build JSON
+    data = {
+        "export_date": now.isoformat(),
+        "period": period,
+        "transactions": [
+            {
+                "id": tx.id,
+                "date": tx.date.isoformat(),
+                "category": tx.category.name if tx.category else None,
+                "type": tx.category.type.value if tx.category else None,
+                "icon": tx.category.icon if tx.category else None,
+                "amount": tx.amount,
+                "description": tx.description
+            }
+            for tx in transactions
+        ]
+    }
+    
+    output = io.StringIO()
+    json.dump(data, output, indent=2, ensure_ascii=False)
+    output.seek(0)
+    
+    filename = f"budget_export_{period}_{now.strftime('%Y%m%d')}.json"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
