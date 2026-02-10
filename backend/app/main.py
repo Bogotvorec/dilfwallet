@@ -16,7 +16,11 @@ from app.routes_portfolio import router as portfolio_router
 from app.routes_budget import router as budget_router
 from app.models import Base
 from app.db import engine, get_db
+from app.logging_config import setup_logging
+from app.middleware import ErrorHandlingMiddleware
 
+# Initialize structured logging
+setup_logging()
 logger = logging.getLogger(__name__)
 
 # ========== Rate Limiter ==========
@@ -49,9 +53,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="DILFwallet API",
     description="Multi-portfolio crypto, stocks, ETF, metals tracker with budget management",
-    version="2.1.0",
+    version="2.2.0",
     lifespan=lifespan
 )
+
+# ========== Error Handling Middleware ==========
+app.add_middleware(ErrorHandlingMiddleware)
 
 # ========== Rate Limiter Setup ==========
 app.state.limiter = limiter
@@ -99,12 +106,13 @@ app.include_router(budget_router)
 @app.get("/")
 def root():
     return {
-        "message": "DILFwallet API v2.1",
+        "message": "DILFwallet API v2.2",
         "features": [
             "Multi-portfolio support (crypto, stocks, ETF, metals)",
             "Budget tracking (income/expenses)",
             "JWT authentication with refresh tokens",
             "Rate limiting",
+            "Structured logging & error handling",
         ]
     }
 
@@ -122,6 +130,6 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     return {
         "status": "healthy" if db_status == "healthy" else "degraded",
         "database": db_status,
-        "version": "2.1.0",
+        "version": "2.2.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }

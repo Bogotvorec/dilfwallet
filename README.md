@@ -1,177 +1,129 @@
-# 💰 DILFwallet - Крипто-портфолио трекер# 💰 DILFwallet - Крипто-портфолио трекер
+# 💰 DILFwallet
 
+Multi-portfolio asset tracker with budget management. Track crypto, stocks, ETFs, and precious metals — all in one place.
 
-
-Веб и мобильное приложение для отслеживания криптовалютного портфеля с реальными ценами, аналитикой P&L и историей транзакций.Веб и мобильное приложение для отслеживания криптовалютного портфеля с реальными ценами, аналитикой P&L и историей транзакций.
-
-
-
-## 🚀 Быстрый старт## 🚀 Быстрый старт
-
-
-
-### 1. Запуск PostgreSQL### Backend + Frontend запуск
-
-
-
-```bash1. Запустите PostgreSQL:
-
-docker-compose up -d```bash
-
-```docker-compose up -d
-
-```
-
-### 2. Запуск Backend (FastAPI)
-
-2. Запустите backend (в отдельном терминале):
-
-```bash```bash
-
-cd backendcd backend
-
-python -m venv .venv && source .venv/bin/activate
-
-# Создание виртуального окружения (если еще не создано)pip install -r requirements.txt
-
-python -m venv ../.venvpython -m app.init_db
-
-source ../.venv/bin/activate  # Linux/Macuvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-```
-
-# Установка зависимостей
-
-pip install -r requirements.txt3. Запустите frontend (в отдельном терминале):
-
-```bash
-
-# Создание таблиц в БДcd frontend
-
-python -m app.init_dbnpm install
-
-npm run dev
-
-# Запуск сервера```
-
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-```4. Откройте http://localhost:3000 в браузере
-
-
-
-Backend доступен: **http://localhost:8000**  ## 📚 Подробная документация
-
-API документация: **http://localhost:8000/docs**
-
-См. полную документацию в файле для инструкций по установке, настройке и использованию.
-
-### 3. Запуск Frontend (Next.js)
-
-## 🎯 Основное
-
-Откройте новый терминал:
-
-- ✅ Backend API (FastAPI) на http://localhost:8000
-
-```bash- ✅ Веб-приложение (Next.js) на http://localhost:3000
-
-cd frontend- ✅ PostgreSQL в Docker
-
-- ✅ Реальные цены криптовалют (CoinGecko API)
-
-# Установка зависимостей- ✅ JWT аутентификация
-
-npm install
-
-# Запуск dev-сервера
-npm run dev
-```
-
-Веб-приложение: **http://localhost:3000**
-
-## 🎯 Возможности
-
-### ✅ Реализовано
-
-- Регистрация и аутентификация (JWT)
-- Добавление криптовалют в портфолио
-- Получение цен в реальном времени (CoinGecko API)
-- Расчет P&L (прибыль/убыток)
-- Адаптивный веб-интерфейс
-- REST API
-
-### 🚧 В планах
-
-- История транзакций
-- Графики и аналитика
-- Мобильное приложение (Expo)
-- Push-уведомления
-
-## 📚 API Endpoints
-
-- `POST /register` - Регистрация
-- `POST /login` - Вход (получение JWT токена)
-- `GET /me` - Информация о пользователе
-- `GET /portfolio` - Список активов
-- `POST /portfolio` - Добавить актив
-- `GET /portfolio/summary` - Сводка с P&L
-- `GET /transactions` - История транзакций
-- `POST /transactions` - Создать транзакцию
-
-## 🔧 Переменные окружения
-
-### Backend (`backend/.env`)
-
-```env
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/dilfwallet
-SECRET_KEY=dev-secret-key-change-in-production-12345678
-COINGECKO_API_KEY=
-```
-
-### Frontend (`frontend/.env.local`)
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-## 🗄️ Структура БД
-
-- **users** - пользователи
-- **portfolio** - активы портфеля
-- **transactions** - история транзакций
-
-## 📦 Стек технологий
-
-- **Backend**: FastAPI, PostgreSQL, SQLAlchemy (async), JWT
-- **Frontend**: Next.js 15, TypeScript, TailwindCSS, Axios
-- **Mobile**: React Native, Expo (в разработке)
-- **DevOps**: Docker, Docker Compose
-
-## 👨‍💻 Разработка
-
-```bash
-# Backend тесты
-cd backend && pytest
-
-# Frontend тесты
-cd frontend && npm test
-
-# Проверка кода
-cd backend && flake8
-cd frontend && npm run lint
-```
-
-## 📄 Лицензия
-
-MIT License - см. файл LICENSE
-
-## 🙏 Благодарности
-
-- [CoinGecko API](https://www.coingecko.com/)
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [Next.js](https://nextjs.org/)
+**Live:** [dilfwallet.vercel.app](https://dilfwallet.vercel.app) | **API:** [dilfwallet.onrender.com](https://dilfwallet.onrender.com)
 
 ---
 
-**Сделано с ❤️ для трекинга крипты**
+## ✨ Features
+
+- **Multi-Portfolio** — Separate portfolios for crypto, stocks, ETF, metals
+- **Real-Time Prices** — CoinGecko (crypto), Yahoo Finance (stocks/ETF/metals)
+- **Budget Tracking** — Income/expense categories, charts, CSV/JSON export
+- **Secure Auth** — JWT access + refresh tokens, bcrypt hashing, rate limiting
+- **Production Ready** — PostgreSQL, Alembic migrations, structured logging, CI/CD
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | Next.js, TypeScript, Recharts |
+| **Backend** | FastAPI, SQLAlchemy (async), Pydantic |
+| **Database** | PostgreSQL (prod) / SQLite (dev) |
+| **Auth** | JWT (access + refresh), bcrypt, slowapi |
+| **Deploy** | Vercel (frontend) + Render (backend) |
+| **CI** | GitHub Actions |
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+
+### Backend
+```bash
+cd backend
+python -m venv .venv
+.venv/Scripts/activate     # Windows
+# source .venv/bin/activate  # macOS/Linux
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+```
+API available at `http://localhost:8000` | Docs at `http://localhost:8000/docs`
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+App available at `http://localhost:3000`
+
+### Environment Variables
+
+**Backend** (`backend/.env`):
+```env
+SECRET_KEY=your-secret-key-here     # Required in production
+DATABASE_URL=postgresql+asyncpg://user:pass@host/db  # Optional, defaults to SQLite
+REDIS_URL=redis://localhost:6379    # Optional, enables Redis cache
+```
+
+**Frontend** (`frontend/.env.local`):
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```
+
+## 📡 API Endpoints
+
+### Auth
+| Method | Endpoint | Rate Limit | Description |
+|--------|----------|-----------|-------------|
+| POST | `/register` | 3/min | Create account |
+| POST | `/login` | 5/min | Get access + refresh tokens |
+| POST | `/refresh` | 10/min | Exchange refresh → new access token |
+| GET | `/me` | — | Current user info |
+
+### Portfolios
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/portfolios` | List all portfolios |
+| POST | `/portfolios` | Create portfolio |
+| DELETE | `/portfolios/{id}` | Delete portfolio |
+| GET | `/portfolios/{id}/summary` | Portfolio with P&L |
+| POST | `/portfolios/{id}/entries` | Add asset entry |
+| POST | `/portfolios/{id}/transactions` | Record transaction |
+| GET | `/portfolios/{id}/export/csv` | Export as CSV |
+
+### Budget
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/budget/categories` | List categories |
+| POST | `/budget/categories` | Create category |
+| GET | `/budget/transactions` | List transactions |
+| POST | `/budget/transactions` | Add transaction |
+| GET | `/budget/summary?period=month` | Summary with totals |
+| GET | `/budget/chart-data?period=month` | Chart data |
+| GET | `/budget/export/csv?period=month` | Export as CSV |
+
+### System
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | API info |
+| GET | `/health` | Health check (DB status) |
+
+## 🧪 Testing
+
+```bash
+cd backend
+pip install pytest pytest-asyncio httpx
+python -m pytest tests/ -v
+```
+
+**40 tests** covering auth, portfolios, price service, and health checks.
+
+## 🚢 Deployment
+
+### Render (Backend)
+1. Connect GitHub repo
+2. **Build:** `cd backend && pip install -r requirements.txt`
+3. **Start:** `cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+4. Set env vars: `SECRET_KEY`, `DATABASE_URL` (from Render PostgreSQL)
+
+### Vercel (Frontend)
+1. Connect GitHub repo, set root to `frontend`
+2. Set `NEXT_PUBLIC_API_BASE_URL` to your Render URL
+
+## 📄 License
+
+MIT
