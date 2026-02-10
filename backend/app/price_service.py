@@ -3,22 +3,97 @@
 - Крипто: CoinGecko API
 - Акции/ETF: Yahoo Finance (yfinance)
 - Металлы: Yahoo Finance commodity tickers
+
+Features:
+- Redis-backed cache with in-memory fallback
+- Configurable TTL per asset type
+- Thread pool for synchronous yfinance calls
 """
 import httpx
 import yfinance as yf
+import logging
+import os
 from typing import Dict, Optional
 from datetime import datetime, timedelta
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-# Простой in-memory кэш с TTL
-_price_cache: Dict[str, tuple[float, datetime]] = {}
-CACHE_TTL_CRYPTO = 60  # 1 минута для крипты
-CACHE_TTL_STOCKS = 300  # 5 минут для акций
-CACHE_TTL_METALS = 600  # 10 минут для металлов
+logger = logging.getLogger(__name__)
+
+
+# ========== CACHE ==========
+
+class PriceCache:
+    """Redis-backed price cache with in-memory fallback"""
+
+    def __init__(self):
+        self._memory_cache: Dict[str, tuple[float, datetime]] = {}
+        self._redis = None
+        redis_url = os.getenv("REDIS_URL")
+        if redis_url:
+            try:
+                import redis.asyncio as aioredis
+                self._redis = aioredis.from_url(redis_url, decode_responses=True)
+                logger.info("✅ Redis cache connected")
+            except Exception as e:
+                logger.warning(f"⚠️ Redis not available, using in-memory cache: {e}")
+
+    async def get(self, key: str, ttl_seconds: int = 60) -> Optional[float]:
+        """Get cached price, returns None if expired or missing"""
+        # Try Redis first
+        if self._redis:
+            try:
+                val = await self._redis.get(f"price:{key}")
+                if val is not None:
+                    return float(val)
+            except Exception:
+                pass
+
+        # Fallback to in-memory
+        if key in self._memory_cache:
+            price, cached_at = self._memory_cache[key]
+            if datetime.utcnow() - cached_at < timedelta(seconds=ttl_seconds):
+                return price
+            else:
+                del self._memory_cache[key]  # Expired
+        return None
+
+    async def set(self, key: str, price: float, ttl: int = 60):
+        """Cache a price with TTL"""
+        # Try Redis first
+        if self._redis:
+            try:
+                await self._redis.setex(f"price:{key}", ttl, str(price))
+                return
+            except Exception:
+                pass
+
+        # Fallback to in-memory
+        self._memory_cache[key] = (price, datetime.utcnow())
+
+    async def clear(self):
+        """Clear all cached prices"""
+        if self._redis:
+            try:
+                keys = await self._redis.keys("price:*")
+                if keys:
+                    await self._redis.delete(*keys)
+            except Exception:
+                pass
+        self._memory_cache.clear()
+
+
+# Global cache instance
+cache = PriceCache()
+
+# Cache TTLs per asset type (seconds)
+CACHE_TTL_CRYPTO = 60    # 1 минута для крипты
+CACHE_TTL_STOCKS = 300   # 5 минут для акций
+CACHE_TTL_METALS = 600   # 10 минут для металлов
 
 # Thread pool для синхронного yfinance
 _executor = ThreadPoolExecutor(max_workers=5)
+
 
 # ========== CRYPTO (CoinGecko) ==========
 
@@ -49,15 +124,14 @@ async def get_crypto_price(symbol: str, vs_currency: str = "usd") -> Optional[fl
     """Get cryptocurrency price from CoinGecko"""
     symbol_upper = symbol.upper()
     cache_key = f"crypto_{symbol_upper}_{vs_currency}"
-    
+
     # Check cache
-    if cache_key in _price_cache:
-        price, cached_at = _price_cache[cache_key]
-        if datetime.utcnow() - cached_at < timedelta(seconds=CACHE_TTL_CRYPTO):
-            return price
-    
+    cached = await cache.get(cache_key, CACHE_TTL_CRYPTO)
+    if cached is not None:
+        return cached
+
     coin_id = SYMBOL_TO_ID.get(symbol_upper, symbol.lower())
-    
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
@@ -66,14 +140,14 @@ async def get_crypto_price(symbol: str, vs_currency: str = "usd") -> Optional[fl
             )
             response.raise_for_status()
             data = response.json()
-            
+
             if coin_id in data and vs_currency in data[coin_id]:
                 price = float(data[coin_id][vs_currency])
-                _price_cache[cache_key] = (price, datetime.utcnow())
+                await cache.set(cache_key, price, CACHE_TTL_CRYPTO)
                 return price
             return None
     except Exception as e:
-        print(f"Error fetching crypto price for {symbol}: {e}")
+        logger.error(f"Error fetching crypto price for {symbol}: {e}")
         return None
 
 
@@ -97,17 +171,17 @@ def _get_stock_price_sync(symbol: str) -> Optional[float]:
             price = ticker.fast_info.last_price
             if price and price > 0:
                 return float(price)
-        except:
+        except Exception:
             pass
-        
+
         # Fallback: get from history
         hist = ticker.history(period="1d")
         if not hist.empty:
             return float(hist['Close'].iloc[-1])
-        
+
         return None
     except Exception as e:
-        print(f"Error fetching stock price for {symbol}: {e}")
+        logger.error(f"Error fetching stock price for {symbol}: {e}")
         return None
 
 
@@ -115,19 +189,18 @@ async def get_stock_price(symbol: str) -> Optional[float]:
     """Get stock/ETF price from Yahoo Finance"""
     symbol_upper = symbol.upper()
     cache_key = f"stock_{symbol_upper}"
-    
+
     # Check cache
-    if cache_key in _price_cache:
-        price, cached_at = _price_cache[cache_key]
-        if datetime.utcnow() - cached_at < timedelta(seconds=CACHE_TTL_STOCKS):
-            return price
-    
+    cached = await cache.get(cache_key, CACHE_TTL_STOCKS)
+    if cached is not None:
+        return cached
+
     loop = asyncio.get_event_loop()
     price = await loop.run_in_executor(_executor, _get_stock_price_sync, symbol)
-    
+
     if price:
-        _price_cache[cache_key] = (price, datetime.utcnow())
-    
+        await cache.set(cache_key, price, CACHE_TTL_STOCKS)
+
     return price
 
 
@@ -162,24 +235,23 @@ async def get_metal_price(symbol: str) -> Optional[float]:
     """Get precious metal price from Yahoo Finance futures"""
     symbol_upper = symbol.upper()
     cache_key = f"metal_{symbol_upper}"
-    
+
     # Check cache
-    if cache_key in _price_cache:
-        price, cached_at = _price_cache[cache_key]
-        if datetime.utcnow() - cached_at < timedelta(seconds=CACHE_TTL_METALS):
-            return price
-    
+    cached = await cache.get(cache_key, CACHE_TTL_METALS)
+    if cached is not None:
+        return cached
+
     ticker_symbol = METAL_TICKERS.get(symbol_upper)
     if not ticker_symbol:
-        print(f"Unknown metal symbol: {symbol}")
+        logger.warning(f"Unknown metal symbol: {symbol}")
         return None
-    
+
     loop = asyncio.get_event_loop()
     price = await loop.run_in_executor(_executor, _get_stock_price_sync, ticker_symbol)
-    
+
     if price:
-        _price_cache[cache_key] = (price, datetime.utcnow())
-    
+        await cache.set(cache_key, price, CACHE_TTL_METALS)
+
     return price
 
 
@@ -188,16 +260,16 @@ async def get_metal_price(symbol: str) -> Optional[float]:
 async def get_price_by_type(symbol: str, portfolio_type: str) -> Optional[float]:
     """
     Get asset price based on portfolio type
-    
+
     Args:
         symbol: Asset symbol (BTC, AAPL, XAU, etc.)
         portfolio_type: One of 'crypto', 'stocks', 'etf', 'metals'
-    
+
     Returns:
         Price in USD or None
     """
     ptype = portfolio_type.lower()
-    
+
     if ptype == "crypto":
         return await get_crypto_price(symbol)
     elif ptype in ("stocks", "etf"):
@@ -242,7 +314,7 @@ async def get_historical_price(
     symbol_upper = symbol.upper()
     coin_id = SYMBOL_TO_ID.get(symbol_upper, symbol.lower())
     date_str = date.strftime("%d-%m-%Y")
-    
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
@@ -251,16 +323,15 @@ async def get_historical_price(
             )
             response.raise_for_status()
             data = response.json()
-            
+
             if "market_data" in data and "current_price" in data["market_data"]:
                 return float(data["market_data"]["current_price"].get(vs_currency, 0))
             return None
     except Exception as e:
-        print(f"Error fetching historical price for {symbol} on {date_str}: {e}")
+        logger.error(f"Error fetching historical price for {symbol} on {date_str}: {e}")
         return None
 
 
 def clear_cache():
-    """Clear price cache"""
-    global _price_cache
-    _price_cache.clear()
+    """Clear price cache (sync wrapper for backward compat)"""
+    asyncio.create_task(cache.clear())
