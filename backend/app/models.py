@@ -82,8 +82,8 @@ class PortfolioEntry(Base):
     id = Column(Integer, primary_key=True, index=True)
     portfolio_id = Column(Integer, ForeignKey("portfolios.id"), nullable=False)
     symbol = Column(String(20), index=True, nullable=False)
-    amount = Column(Float, default=0)
-    purchase_price = Column(Float, default=0)
+    amount = Column(Numeric(precision=18, scale=8), default=0)
+    purchase_price = Column(Numeric(precision=18, scale=8), default=0)
 
     portfolio = relationship("Portfolio", back_populates="entries")
     transactions = relationship("Transaction", back_populates="portfolio_entry", cascade="all, delete-orphan")
@@ -127,7 +127,7 @@ class BudgetTransaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
     category_id = Column(Integer, ForeignKey("budget_categories.id"), nullable=False)
-    amount = Column(Float, nullable=False)
+    amount = Column(Numeric(precision=12, scale=2), nullable=False)
     description = Column(Text, default="")
     date = Column(DateTime, default=datetime.utcnow)
     
