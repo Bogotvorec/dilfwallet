@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiClient } from './api';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { apiClient, setTokens, clearTokens, getAccessToken } from './api';
 import { useRouter } from 'next/router';
 
 interface User {
@@ -24,14 +24,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const logout = useCallback(() => {
+    clearTokens();
+    setUser(null);
+    router.push('/');
+  }, [router]);
+
   useEffect(() => {
-    // Проверяем, есть ли токен при загрузке
-    const token = localStorage.getItem('token');
+    // Load user if we have a token
+    const token = getAccessToken();
     if (token) {
       loadUser();
     } else {
       setLoading(false);
     }
+
+    // Listen for forced logout (from token refresh failure)
+    const handleForcedLogout = () => {
+      setUser(null);
+      setLoading(false);
+      router.push('/login');
+    };
+
+    window.addEventListener('auth:logout', handleForcedLogout);
+    return () => window.removeEventListener('auth:logout', handleForcedLogout);
   }, []);
 
   const loadUser = async () => {
@@ -40,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(userData);
     } catch (error) {
       console.error('Failed to load user:', error);
-      localStorage.removeItem('token');
+      clearTokens();
     } finally {
       setLoading(false);
     }
@@ -49,7 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const data = await apiClient.login(email, password);
-      localStorage.setItem('token', data.access_token);
+      // Store both access and refresh tokens
+      setTokens(data.access_token, data.refresh_token);
       await loadUser();
       router.push('/');
     } catch (error: any) {
@@ -62,26 +79,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string) => {
     try {
       await apiClient.register(email, password);
-      console.log('Registration successful, logging in...');
       // После регистрации автоматически логинимся
       await login(email, password);
     } catch (error: any) {
-      console.error('Registration error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        code: error.code,
-        fullError: error
-      });
+      console.error('Registration error:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Ошибка регистрации';
       throw new Error(errorMessage);
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-    router.push('/');
   };
 
   return (

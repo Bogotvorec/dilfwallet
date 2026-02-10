@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios';
 
 // Определяем backend URL в зависимости от окружения
 const getBackendUrl = () => {
@@ -20,7 +20,33 @@ const getBackendUrl = () => {
 };
 
 const API_BASE_URL = getBackendUrl();
-console.log('🔧 API Base URL:', API_BASE_URL);
+
+// ========== Token Storage ==========
+
+const TOKEN_KEY = 'token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
+
+export function getAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function setTokens(accessToken: string, refreshToken: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(TOKEN_KEY, accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+}
+
+export function clearTokens(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
 
 // ========== Types ==========
 
@@ -125,6 +151,11 @@ export interface BudgetChartData {
 
 class ApiClient {
   private client: AxiosInstance;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (token: string) => void;
+    reject: (error: any) => void;
+  }> = [];
 
   constructor() {
     this.client = axios.create({
@@ -134,26 +165,96 @@ class ApiClient {
       },
     });
 
-    this.client.interceptors.request.use((config) => {
-      if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
+    // ===== Request interceptor: attach access token =====
+    this.client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+      const token = getAccessToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
       return config;
     });
 
+    // ===== Response interceptor: auto-refresh on 401 =====
     this.client.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error: AxiosError) => {
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+        // Network error
         if (error.code === 'ERR_NETWORK') {
           console.error('Network error - backend may not be running on', API_BASE_URL);
           error.message = 'Не удается подключиться к серверу.';
+          return Promise.reject(error);
         }
+
+        // If 401 and not a retry, and not login/register/refresh endpoint
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !originalRequest.url?.includes('/login') &&
+          !originalRequest.url?.includes('/register') &&
+          !originalRequest.url?.includes('/refresh')
+        ) {
+          if (this.isRefreshing) {
+            // Queue the request while refresh is in progress
+            return new Promise((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject });
+            }).then((token) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              return this.client(originalRequest);
+            });
+          }
+
+          originalRequest._retry = true;
+          this.isRefreshing = true;
+
+          const refreshToken = getRefreshToken();
+          if (!refreshToken) {
+            this.isRefreshing = false;
+            this.handleLogout();
+            return Promise.reject(error);
+          }
+
+          try {
+            const response = await axios.post(`${API_BASE_URL}/refresh`, {
+              refresh_token: refreshToken,
+            });
+
+            const newAccessToken = response.data.access_token;
+            // Update stored token (keep same refresh token)
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(TOKEN_KEY, newAccessToken);
+            }
+
+            // Retry all queued requests
+            this.failedQueue.forEach(({ resolve }) => resolve(newAccessToken));
+            this.failedQueue = [];
+            this.isRefreshing = false;
+
+            // Retry the original request
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            return this.client(originalRequest);
+          } catch (refreshError) {
+            // Refresh failed — force logout
+            this.failedQueue.forEach(({ reject }) => reject(refreshError));
+            this.failedQueue = [];
+            this.isRefreshing = false;
+            this.handleLogout();
+            return Promise.reject(refreshError);
+          }
+        }
+
         return Promise.reject(error);
       }
     );
+  }
+
+  private handleLogout(): void {
+    clearTokens();
+    if (typeof window !== 'undefined') {
+      // Dispatch custom event so AuthProvider can react
+      window.dispatchEvent(new Event('auth:logout'));
+    }
   }
 
   // ========== Auth ==========
