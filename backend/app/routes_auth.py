@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from jose import JWTError
@@ -12,7 +12,7 @@ from app.db import get_db
 from app.utils import hash_password, verify_password
 from app.auth import create_access_token, create_refresh_token, verify_token
 from app.dependencies import get_current_user
-from app.limiter import limiter
+
 
 router = APIRouter()
 
@@ -22,8 +22,7 @@ class RefreshTokenRequest(BaseModel):
 
 
 @router.post("/register", response_model=UserRead)
-@limiter.limit("3/minute")
-async def register(request: Request, user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == user_in.email))
     existing_user = result.scalars().first()
 
@@ -39,8 +38,7 @@ async def register(request: Request, user_in: UserCreate, db: AsyncSession = Dep
 
 
 @router.post("/login")
-@limiter.limit("5/minute")
-async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == form_data.username))
     user = result.scalars().first()
 
@@ -57,8 +55,7 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
 
 
 @router.post("/refresh")
-@limiter.limit("10/minute")
-async def refresh(request: Request, body: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
+async def refresh(body: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
     """Exchange a valid refresh token for a new access token"""
     try:
         payload = verify_token(body.refresh_token, expected_type="refresh")

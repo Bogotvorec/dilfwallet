@@ -6,8 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,8 +22,7 @@ from app.middleware import register_error_handlers
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# ========== Rate Limiter ==========
-from app.limiter import limiter
+
 
 
 @asynccontextmanager
@@ -60,9 +58,7 @@ app = FastAPI(
 # ========== Error Handling ==========
 register_error_handlers(app)
 
-# ========== Rate Limiter Setup ==========
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 # ========== CORS ==========
 origins = [
