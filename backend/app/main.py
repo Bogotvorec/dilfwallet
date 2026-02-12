@@ -17,9 +17,9 @@ from app.routes_budget import router as budget_router
 from app.models import Base
 from app.db import engine, get_db
 from app.logging_config import setup_logging
-from app.middleware import ErrorHandlingMiddleware
+from app.middleware import register_error_handlers
 
-# Initialize structured logging
+# Initialize structured logging (INFO level — safe for async)
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -57,8 +57,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ========== Error Handling Middleware ==========
-app.add_middleware(ErrorHandlingMiddleware)
+# ========== Error Handling ==========
+register_error_handlers(app)
 
 # ========== Rate Limiter Setup ==========
 app.state.limiter = limiter

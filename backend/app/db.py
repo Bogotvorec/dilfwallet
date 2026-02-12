@@ -29,9 +29,9 @@ def _get_database_url() -> str:
 
 DATABASE_URL = _get_database_url()
 
-# Параметры для движка
+# Параметры для движка — echo always off (floods async event loop with aiosqlite)
 engine_kwargs = {
-    "echo": not IS_PRODUCTION,  # Логируем SQL только в dev
+    "echo": False,
 }
 
 if "sqlite" in DATABASE_URL:

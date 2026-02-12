@@ -2,10 +2,9 @@
 Structured logging configuration for DILFwallet.
 
 - Production (Render): JSON format for log aggregation
-- Development: Human-readable colored format
+- Development: Human-readable format, INFO level
 """
 import logging
-import logging.config
 import os
 import sys
 import json
@@ -27,37 +26,29 @@ class JSONFormatter(logging.Formatter):
         }
         if record.exc_info and record.exc_info[0]:
             log_entry["exception"] = self.formatException(record.exc_info)
-        if hasattr(record, "request_id"):
-            log_entry["request_id"] = record.request_id
-        if hasattr(record, "user_id"):
-            log_entry["user_id"] = record.user_id
         return json.dumps(log_entry, ensure_ascii=False)
 
 
 def setup_logging() -> None:
     """Configure logging based on environment"""
     if IS_PRODUCTION:
-        # JSON logs for production
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(JSONFormatter())
-        level = logging.INFO
     else:
-        # Readable logs for development
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(logging.Formatter(
             "%(asctime)s │ %(levelname)-7s │ %(name)-20s │ %(message)s",
             datefmt="%H:%M:%S"
         ))
-        level = logging.DEBUG
 
-    # Root logger
+    # Always use INFO — DEBUG floods the event loop via aiosqlite
+    level = logging.INFO
+
     logging.root.handlers.clear()
     logging.root.addHandler(handler)
     logging.root.setLevel(level)
 
     # Quiet noisy libraries
-    logging.getLogger("httpx").setLevel(logging.WARNING)
-    logging.getLogger("httpcore").setLevel(logging.WARNING)
-    logging.getLogger("yfinance").setLevel(logging.WARNING)
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
-    logging.getLogger("uvicorn.access").setLevel(logging.INFO)
+    for noisy in ["httpx", "httpcore", "yfinance", "aiosqlite",
+                   "sqlalchemy.engine", "uvicorn.access"]:
+        logging.getLogger(noisy).setLevel(logging.WARNING)
