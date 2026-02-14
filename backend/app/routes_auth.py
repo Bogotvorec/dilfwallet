@@ -23,17 +23,26 @@ class RefreshTokenRequest(BaseModel):
 
 @router.post("/register", response_model=UserRead)
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"📝 Registering user: {user_in.email}")
     result = await db.execute(select(User).where(User.email == user_in.email))
     existing_user = result.scalars().first()
 
     if existing_user:
+        logger.info(f"⚠️ User already exists: {user_in.email}")
         raise HTTPException(status_code=400, detail="User already exists")
 
     hashed = hash_password(user_in.password)
     new_user = User(email=user_in.email, hashed_password=hashed)
     db.add(new_user)
+    
+    logger.info("💾 Committing to database...")
     await db.commit()
-    await db.refresh(new_user)
+    # Removed refresh(new_user) to avoid potential asyncpg hanging issues in this version
+    
+    logger.info(f"✅ Successfully registered user: {user_in.email}")
     return new_user
 
 

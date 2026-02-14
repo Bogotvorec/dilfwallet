@@ -50,5 +50,5 @@ def setup_logging() -> None:
 
     # Quiet noisy libraries
     for noisy in ["httpx", "httpcore", "yfinance", "aiosqlite",
-                   "sqlalchemy.engine", "uvicorn.access"]:
+                   "sqlalchemy.engine"]:
         logging.getLogger(noisy).setLevel(logging.WARNING)
